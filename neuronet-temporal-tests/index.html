@@ -255,11 +255,8 @@
                     
                     // Handle success
                     if (result.success) {
-                        alert(result.message || 'Thank you! Your information has been submitted.');
-                        form.reset();
-                        
-                        // Redirect or show success message
-                        // window.location.href = 'success.html';
+                        // Redirect to instructions page
+                        window.location.href = 'instructions.html';
                     } else {
                         throw new Error(result.message || 'Submission failed. Please try again.');
                     }

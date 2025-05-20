@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroNet Temporal Processing Tests - Instructions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        .continue-btn {
+            display: block;
+            width: 200px;
+            margin: 0 auto;
+            padding: 15px 20px;
+            font-size: 18px;
+            color: white;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        .continue-btn:hover {
+            background-color: #2980b9;
+        }
+        .speaker-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23333"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: center;
+            vertical-align: middle;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 15px;
+            }
+            .container {
+                padding: 20px 15px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NeuroNet Temporal Processing Tests</h1>
+        <p>Welcome to the test! It will take less than five minutes to complete. Please ensure that your speakers are on and click continue.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <span class="speaker-icon"></span>
+            <span>Make sure your sound is turned on</span>
+        </div>
+        
+        <a href="test.html" class="continue-btn">Continue</a>
+    </div>
+
+    <script>
+        // Check if the browser supports the Web Audio API
+        function isAudioSupported() {
+            return 'AudioContext' in window || 'webkitAudioContext' in window;
+        }
+
+        // Check if the page is being served over HTTPS (required for audio in some browsers)
+        function isSecureContext() {
+            return window.isSecureContext;
+        }
+
+        // Show a warning if audio might not work
+        window.onload = function() {
+            if (!isAudioSupported()) {
+                alert('Warning: Your browser may not support the audio features required for this test.');
+            }
+            
+            if (!isSecureContext() && window.location.protocol !== 'https:') {
+                console.warn('For best results, serve this page over HTTPS');
+            }
+        };
+    </script>
+</body>
+</html>

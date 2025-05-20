@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroNet Temporal Processing Test</title>
+    <style>
+        :root {
+            --aspect-ratio: 16/9;
+            --padding-ratio: 19.5/9;
+            --section-count: 3;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        
+        .header {
+            padding: 1rem;
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+        }
+        
+        .test-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1280px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1rem;
+            min-height: 0; /* Allow container to shrink below content size */
+        }
+        
+        .test-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Allow content to shrink */
+        }
+        
+        .test-area-wrapper {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 0; /* Allow wrapper to shrink */
+        }
+        
+        .test-area {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: min(
+                calc(100% / (var(--aspect-ratio)) * (var(--padding-ratio) / (var(--aspect-ratio)))),
+                80vh /* Limit maximum height to 80% of viewport height */
+            );
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 0 auto;
+            max-width: 1200px; /* Limit maximum width */
+        }
+        
+        .test-sections-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .test-section {
+            flex: 1 1 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            border-right: 1px solid #e9ecef;
+            background-color: #f8f9fa;
+            padding: 0;
+        }
+        
+        .section-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0);
+            transition: background-color 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .test-section:hover .section-overlay {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .test-section.correct .section-overlay,
+        .test-section.incorrect .section-overlay {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-section:last-child {
+            border-right: none;
+        }
+        
+        .test-section img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        .test-section:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .test-section.correct {
+            background-color: rgba(40, 167, 69, 0.1);
+            border: 2px solid #28a745;
+        }
+        
+        .test-section.incorrect {
+            background-color: rgba(220, 53, 69, 0.1);
+            border: 2px solid #dc3545;
+        }
+        
+        .section-label {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .test-section:hover .section-label {
+            opacity: 1;
+        }
+        
+        .progress-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 2rem auto 1rem;
+            padding: 0 1rem;
+            order: 2; /* Move below test area */
+        }
+        
+        .progress {
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: #007bff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .status-message {
+            text-align: center;
+            margin: 1rem 0;
+            min-height: 24px;
+            font-weight: 500;
+            color: #6c757d;
+        }
+        
+        .test-instructions {
+            text-align: center;
+            margin: 0 auto 1.5rem;
+            color: #495057;
+            max-width: 800px;
+            padding: 0 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .test-area {
+                margin: 0.5rem 0;
+                padding-bottom: min(
+                    calc(100% / (var(--aspect-ratio)) * (var(--padding-ratio) / (var(--aspect-ratio)))),
+                    70vh
+                );
+            }
+            
+            .test-section {
+                padding: 5px;
+            }
+            
+            .progress-container {
+                margin: 1rem auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>NeuroNet Temporal Processing Test</h1>
+    </div>
+    
+    <div class="test-container">
+        <div class="test-content">
+            <p class="test-instructions">Click on the section that matches the sound you hear.</p>
+            
+            <div class="test-area-wrapper">
+                <div class="test-area">
+                    <div class="test-sections-container">
+                        <div class="test-section" id="leftSection" data-zone="left">
+                            <div class="section-label">Left</div>
+                        </div>
+                        <div class="test-section" id="centerSection" data-zone="center">
+                            <div class="section-label">Center</div>
+                        </div>
+                        <div class="test-section" id="rightSection" data-zone="right">
+                            <div class="section-label">Right</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="status-message" id="status">Loading test...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = document.querySelectorAll('.test-section');
+            const statusElement = document.getElementById('status');
+            const progressBar = document.getElementById('progressBar');
+            let correctSection = Math.floor(Math.random() * 3);
+            let canClick = true;
+            
+            // Set placeholder images for each section
+            sections.forEach((section, index) => {
+                const zone = section.getAttribute('data-zone');
+                section.innerHTML = ''; // Clear any existing content
+                
+                // Create container for the image to help with centering
+                const imgContainer = document.createElement('div');
+                imgContainer.style.position = 'absolute';
+                imgContainer.style.top = '0';
+                imgContainer.style.left = '0';
+                imgContainer.style.width = '100%';
+                imgContainer.style.height = '100%';
+                imgContainer.style.display = 'flex';
+                imgContainer.style.alignItems = 'center';
+                imgContainer.style.justifyContent = 'center';
+                imgContainer.style.padding = '10px';
+                
+                // Create image element
+                const img = document.createElement('img');
+                img.src = 'images/placeholder.svg';
+                img.alt = zone + ' section';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.style.display = 'block';
+                
+                // Add image to container
+                imgContainer.appendChild(img);
+                
+                // Add container to section
+                section.appendChild(imgContainer);
+                
+                // Add label
+                const label = document.createElement('div');
+                label.className = 'section-label';
+                label.textContent = zone.charAt(0).toUpperCase() + zone.slice(1);
+                section.appendChild(label);
+                
+                // Add overlay for hover effect
+                const overlay = document.createElement('div');
+                overlay.className = 'section-overlay';
+                section.appendChild(overlay);
+            });
+            
+            // Update status
+            updateStatus('Listen to the sound and click the matching section.');
+            
+            // Simulate a sound being played
+            playSound(correctSection);
+            
+            // Add click handlers
+            sections.forEach((section, index) => {
+                section.addEventListener('click', function() {
+                    if (!canClick) return;
+                    
+                    canClick = false;
+                    const isCorrect = (index === correctSection);
+                    
+                    // Visual feedback
+                    if (isCorrect) {
+                        section.classList.add('correct');
+                        updateStatus('Correct! Loading next test...');
+                        updateProgress(33);
+                        
+                        // In a real implementation, this would load the next test
+                        setTimeout(() => {
+                            resetTest();
+                            // For demo purposes, just reload the page
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        }, 1000);
+                    } else {
+                        section.classList.add('incorrect');
+                        updateStatus('Incorrect. Try again.');
+                        
+                        // Re-enable clicking after a delay
+                        setTimeout(() => {
+                            section.classList.remove('incorrect');
+                            canClick = true;
+                        }, 1000);
+                    }
+                });
+            });
+            
+            // Initial progress update
+            updateProgress(10);
+            
+            function playSound(sectionIndex) {
+                // In a real implementation, this would play the corresponding sound
+                console.log('Playing sound for section:', ['Left', 'Center', 'Right'][sectionIndex]);
+                
+                // Visual indicator of which section is playing (for demo)
+                sections.forEach((s, i) => {
+                    if (i === sectionIndex) {
+                        s.style.border = '2px solid #007bff';
+                        setTimeout(() => {
+                            s.style.border = '1px solid #e9ecef';
+                        }, 500);
+                    }
+                });
+            }
+            
+            function updateStatus(message) {
+                statusElement.textContent = message;
+            }
+            
+            function updateProgress(percent) {
+                progressBar.style.width = `${percent}%`;
+            }
+            
+            function resetTest() {
+                sections.forEach(section => {
+                    section.classList.remove('correct', 'incorrect');
+                });
+                canClick = true;
+            }
+            
+            // Add keyboard navigation for accessibility
+            document.addEventListener('keydown', function(e) {
+                if (!canClick) return;
+                
+                let sectionIndex = -1;
+                if (e.key === '1' || e.key === 'ArrowLeft') {
+                    sectionIndex = 0; // Left
+                } else if (e.key === '2' || e.key === 'ArrowDown') {
+                    sectionIndex = 1; // Center
+                } else if (e.key === '3' || e.key === 'ArrowRight') {
+                    sectionIndex = 2; // Right
+                }
+                
+                if (sectionIndex >= 0) {
+                    sections[sectionIndex].click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
