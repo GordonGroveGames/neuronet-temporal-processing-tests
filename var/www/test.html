@@ -189,24 +189,28 @@
             display: grid;
             grid-template-columns: repeat(15, 1fr);
             width: 100%;
-            min-height: 40px;
             background-color: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 8px;
             overflow: hidden;
+            gap: 1px;
+            aspect-ratio: 15/1; /* Maintain aspect ratio for the grid */
         }
         
         .score-indicator {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            aspect-ratio: 1;
-            border-right: 1px solid rgba(0, 0, 0, 0.1);
-            background-color: #e9ecef;
-            transition: all 0.3s ease;
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%; /* Makes the height equal to the width */
+            background-color: rgba(52, 152, 219, 0.1); /* Light blue for empty state */
+            transition: background-color 0.3s ease;
+        }
+        
+        .score-indicator.correct {
+            background-color: #28a745; /* Green for correct */
+        }
+        
+        .score-indicator.incorrect {
+            background-color: #dc3545; /* Red for incorrect */
         }
         
         .score-indicator:last-child {
@@ -311,8 +315,6 @@
                 </div>
             </div>
             
-            <h2 id="testTitle">Test Title</h2>
-            
             <div class="test-area">
                 <div class="test-section" data-zone="Left">
                     <span class="test-label">Left</span>
@@ -352,7 +354,6 @@
             const scoreBar = document.getElementById('scoreBar');
             const progressText = document.getElementById('progressText');
             const progressBar = document.getElementById('progressBar');
-            const testTitle = document.getElementById('testTitle');
             const testResults = document.getElementById('testResults');
             const finalResults = document.getElementById('finalResults');
             
@@ -471,7 +472,6 @@
                 };
                 
                 // Update UI
-                testTitle.textContent = currentTest.name;
                 progressText.textContent = `Test ${currentTestIndex + 1} of ${TESTS.length}: ${currentTest.name}`;
                 progressBar.style.width = '0%';
                 
@@ -596,7 +596,8 @@
             
             // Update the score bar
             function updateScoreBar(responses, total) {
-                scoreBar.innerHTML = '';
+                const scoreBar = document.getElementById('scoreBar');
+                scoreBar.innerHTML = ''; // Clear existing indicators
                 
                 for (let i = 0; i < total; i++) {
                     const indicator = document.createElement('div');
@@ -604,9 +605,6 @@
                     
                     if (i < responses.length) {
                         indicator.classList.add(responses[i] ? 'correct' : 'incorrect');
-                        indicator.textContent = responses[i] ? '✓' : '✕';
-                    } else {
-                        indicator.textContent = i + 1;
                     }
                     
                     scoreBar.appendChild(indicator);
