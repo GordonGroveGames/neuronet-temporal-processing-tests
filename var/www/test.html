@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroNet Temporal Processing Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .test-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: white;
+            border-radius: 10px;
+        }
+        
+        .screen {
+            display: none;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+        }
+        
+        h2 {
+            color: #3498db;
+            margin: 1.5rem 0;
+        }
+        
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px 5px;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        /* Test Header */
+        .test-header {
+            margin-bottom: 2rem;
+        }
+        
+        .progress-text {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: #7f8c8d;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #3498db;
+            transition: width 0.3s ease;
+        }
+        
+        /* Test Area */
+        .test-area {
+            display: flex;
+            width: 100%;
+            min-height: 300px;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .test-section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 24px;
+            font-weight: 600;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .test-section:last-child {
+            border-right: none;
+        }
+        
+        .test-section:hover:not(.disabled) {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+        
+        .test-section:active:not(.disabled) {
+            transform: translateY(0);
+        }
+        
+        .test-section.correct {
+            background-color: rgba(46, 213, 115, 0.15);
+            border: 2px solid #2ed573;
+        }
+        
+        .test-section.incorrect {
+            background-color: rgba(255, 71, 87, 0.15);
+            border: 2px solid #ff4757;
+        }
+        
+        .test-section.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .test-label {
+            padding: 10px 20px;
+            border-radius: 20px;
+            background-color: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            transition: all 0.3s;
+        }
+        
+        .test-section:hover .test-label {
+            background-color: rgba(52, 152, 219, 0.2);
+        }
+        
+        /* Score Bar */
+        .score-container {
+            width: 100%;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        
+        .score-bar {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            width: 100%;
+            min-height: 40px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .score-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            aspect-ratio: 1;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+            background-color: #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .score-indicator:last-child {
+            border-right: none;
+        }
+        
+        .score-indicator.correct {
+            background-color: #2ecc71;
+        }
+        
+        .score-indicator.incorrect {
+            background-color: #e74c3c;
+        }
+        
+        /* Results Screen */
+        .test-result {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            text-align: left;
+        }
+        
+        .test-result h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        
+        .summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .test-container {
+                padding: 10px;
+                margin: 10px;
+            }
+            
+            .test-section {
+                font-size: 18px;
+            }
+            
+            .score-indicator {
+                flex: 0 0 24px;
+                height: 24px;
+                min-width: 24px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+
+        
+        .score-indicator:hover {
+            transform: scale(1.05);
+        }
+        
+        .score-indicator.correct {
+            background-color: #28a745;
+        }
+        
+        .score-indicator.incorrect {
+            background-color: #dc3545;
+        }
+        
+        @media (max-width: 768px) {
+            .test-section {
+                font-size: 18px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen">
+            <div class="container">
+                <h1>NeuroNet Temporal Processing Test</h1>
+                <p>This test consists of 6 different tests with 15 trials each.</p>
+                <p>Click the button below to begin.</p>
+                <button id="startButton" class="btn">Start Test</button>
+            </div>
+        </div>
+
+        <!-- Test Screen -->
+        <div id="testScreen" class="screen" style="display: none;">
+            <div class="test-header">
+                <div id="progressText" class="progress-text">Test 1 of 6: Loading...</div>
+                <div class="progress-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+            </div>
+            
+            <h2 id="testTitle">Test Title</h2>
+            
+            <div class="test-area">
+                <div class="test-section" data-zone="Left">
+                    <span class="test-label">Left</span>
+                </div>
+                <div class="test-section" data-zone="Center">
+                    <span class="test-label">Center</span>
+                </div>
+                <div class="test-section" data-zone="Right">
+                    <span class="test-label">Right</span>
+                </div>
+            </div>
+            
+            <div class="score-container">
+                <div class="score-bar" id="scoreBar">
+                    <!-- Score indicators will be added here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="screen" style="display: none;">
+            <div class="container">
+                <div id="testResults"></div>
+                <div id="finalResults"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const startScreen = document.getElementById('startScreen');
+            const testScreen = document.getElementById('testScreen');
+            const resultsScreen = document.getElementById('resultsScreen');
+            const startButton = document.getElementById('startButton');
+            const testSections = document.querySelectorAll('.test-section');
+            const scoreBar = document.getElementById('scoreBar');
+            const progressText = document.getElementById('progressText');
+            const progressBar = document.getElementById('progressBar');
+            const testTitle = document.getElementById('testTitle');
+            const testResults = document.getElementById('testResults');
+            const finalResults = document.getElementById('finalResults');
+            
+            // Test configuration
+            const TESTS = [
+                {
+                    id: 'visual',
+                    name: 'Visual Only',
+                    description: 'Respond to visual cues only',
+                    type: 'visual',
+                    entries: 15,
+                    zones: ['Left', 'Center', 'Right']
+                },
+                {
+                    id: 'auditory',
+                    name: 'Auditory Only',
+                    description: 'Respond to auditory cues only',
+                    type: 'auditory',
+                    entries: 15,
+                    zones: ['Left', 'Center', 'Right']
+                },
+                {
+                    id: 'both',
+                    name: 'Visual + Auditory',
+                    description: 'Respond to combined visual and auditory cues',
+                    type: 'both',
+                    entries: 15,
+                    zones: ['Left', 'Center', 'Right']
+                },
+                {
+                    id: 'distraction',
+                    name: 'With Distraction',
+                    description: 'Respond with visual and auditory distractions',
+                    type: 'both',
+                    entries: 15,
+                    zones: ['Left', 'Center', 'Right'],
+                    distraction: true
+                },
+                {
+                    id: 'variable',
+                    name: 'Variable Timing',
+                    description: 'Respond with variable timing between cues',
+                    type: 'both',
+                    entries: 15,
+                    zones: ['Left', 'Center', 'Right'],
+                    variableTiming: true
+                },
+                {
+                    id: 'combined',
+                    name: 'Combined Challenge',
+                    description: 'Combined challenges with distractions and variable timing',
+                    type: 'both',
+                    entries: 15,
+                    zones: ['Left', 'Center', 'Right'],
+                    distraction: true,
+                    variableTiming: true
+                }
+            ];
+            
+            // Test state
+            let currentTestIndex = 0;
+            let currentTest = null;
+            let testResultsData = [];
+            
+            // Initialize the application
+            function init() {
+                // Show start screen
+                showScreen('start');
+                
+                // Set up event listeners
+                startButton.addEventListener('click', startTests);
+                testSections.forEach(section => {
+                    section.addEventListener('click', handleSectionClick);
+                });
+            }
+            
+            // Show a specific screen
+            function showScreen(screen) {
+                startScreen.style.display = 'none';
+                testScreen.style.display = 'none';
+                resultsScreen.style.display = 'none';
+                
+                switch(screen) {
+                    case 'start':
+                        startScreen.style.display = 'block';
+                        break;
+                    case 'test':
+                        testScreen.style.display = 'block';
+                        break;
+                    case 'results':
+                        resultsScreen.style.display = 'block';
+                        break;
+                }
+            }
+            
+            // Start the test sequence
+            function startTests() {
+                currentTestIndex = 0;
+                testResultsData = [];
+                startNextTest();
+            }
+            
+            // Start the next test in the sequence
+            function startNextTest() {
+                if (currentTestIndex >= TESTS.length) {
+                    // All tests completed
+                    showResults();
+                    return;
+                }
+                
+                currentTest = {
+                    ...TESTS[currentTestIndex],
+                    startTime: Date.now(),
+                    responses: [],
+                    answerSequence: generateAnswerSequence(TESTS[currentTestIndex].entries, TESTS[currentTestIndex].zones)
+                };
+                
+                // Update UI
+                testTitle.textContent = currentTest.name;
+                progressText.textContent = `Test ${currentTestIndex + 1} of ${TESTS.length}: ${currentTest.name}`;
+                progressBar.style.width = '0%';
+                
+                // Clear previous score indicators
+                updateScoreBar([], currentTest.entries);
+                
+                // Show test screen
+                showScreen('test');
+                
+                // Start the first trial
+                startTrial();
+            }
+            
+            // Start a new trial
+            function startTrial() {
+                if (!currentTest) return;
+                
+                const currentTrial = currentTest.responses.length;
+                
+                // Check if test is complete
+                if (currentTrial >= currentTest.entries) {
+                    // Test completed
+                    currentTest.endTime = Date.now();
+                    testResultsData.push({
+                        ...currentTest,
+                        score: calculateScore(currentTest.responses)
+                    });
+                    
+                    // Move to next test
+                    currentTestIndex++;
+                    startNextTest();
+                    return;
+                }
+                
+                // Update progress
+                updateProgress(currentTrial + 1, currentTest.entries);
+                
+                // Get the correct zone for this trial
+                const correctZone = currentTest.answerSequence[currentTrial];
+                
+                // In a real implementation, we would show the visual/auditory cue here
+                // based on the test type (visual, auditory, or both)
+                console.log(`Test ${currentTest.name}, Trial ${currentTrial + 1}: ${correctZone}`);
+                
+                // For now, just enable the test sections
+                enableTestSections();
+            }
+            
+            // Handle section click during test
+            function handleSectionClick(event) {
+                if (!currentTest) return;
+                
+                const selectedZone = event.currentTarget.dataset.zone;
+                const currentTrial = currentTest.responses.length;
+                const correctZone = currentTest.answerSequence[currentTrial];
+                const isCorrect = selectedZone === correctZone;
+                const responseTime = Date.now() - (currentTest.lastTrialStart || currentTest.startTime);
+                
+                // Record the response
+                currentTest.responses.push({
+                    trial: currentTrial + 1,
+                    correctZone,
+                    selectedZone,
+                    isCorrect,
+                    responseTime
+                });
+                
+                // Update UI
+                updateScoreBar(
+                    currentTest.responses.map(r => r.isCorrect),
+                    currentTest.entries
+                );
+                
+                // Visual feedback
+                showFeedback(selectedZone, isCorrect);
+                
+                // Disable sections during feedback
+                disableTestSections();
+                
+                // Move to next trial after a short delay
+                setTimeout(() => {
+                    startTrial();
+                }, 1000);
+            }
+            
+            // Show visual feedback for the selected zone
+            function showFeedback(zone, isCorrect) {
+                testSections.forEach(section => {
+                    if (section.dataset.zone === zone) {
+                        section.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    }
+                });
+                
+                // Remove feedback after animation
+                setTimeout(() => {
+                    testSections.forEach(section => {
+                        section.classList.remove('correct', 'incorrect');
+                    });
+                }, 800);
+            }
+            
+            // Enable test sections for interaction
+            function enableTestSections() {
+                testSections.forEach(section => {
+                    section.classList.remove('disabled');
+                });
+            }
+            
+            // Disable test sections
+            function disableTestSections() {
+                testSections.forEach(section => {
+                    section.classList.add('disabled');
+                });
+            }
+            
+            // Update the progress display
+            function updateProgress(current, total) {
+                const percent = Math.round((current / total) * 100);
+                progressBar.style.width = `${percent}%`;
+                progressText.textContent = `Test ${currentTestIndex + 1} of ${TESTS.length}: ${currentTest.name} (${current} of ${total})`;
+            }
+            
+            // Update the score bar
+            function updateScoreBar(responses, total) {
+                scoreBar.innerHTML = '';
+                
+                for (let i = 0; i < total; i++) {
+                    const indicator = document.createElement('div');
+                    indicator.className = 'score-indicator';
+                    
+                    if (i < responses.length) {
+                        indicator.classList.add(responses[i] ? 'correct' : 'incorrect');
+                        indicator.textContent = responses[i] ? '✓' : '✕';
+                    } else {
+                        indicator.textContent = i + 1;
+                    }
+                    
+                    scoreBar.appendChild(indicator);
+                }
+            }
+            
+            // Calculate score for a test
+            function calculateScore(responses) {
+                const correct = responses.filter(r => r.isCorrect).length;
+                const total = responses.length;
+                return {
+                    correct,
+                    total,
+                    percentage: Math.round((correct / total) * 100),
+                    avgResponseTime: Math.round(
+                        responses.reduce((sum, r) => sum + r.responseTime, 0) / total
+                    )
+                };
+            }
+            
+            // Save results to the server
+            async function saveResults() {
+                try {
+                    // Get user info from session storage
+                    const userInfo = JSON.parse(sessionStorage.getItem('userInfo'));
+                    
+                    if (!userInfo) {
+                        throw new Error('User session not found. Please start the test from the beginning.');
+                    }
+                    
+                    const { fullName, email, userID } = userInfo;
+                    const sessionId = sessionStorage.getItem('sessionId');
+                    
+                    if (!sessionId) {
+                        console.warn('No session ID found, creating a new one');
+                        // Generate a new session ID if none exists
+                        const newSessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+                        sessionStorage.setItem('sessionId', newSessionId);
+                    }
+                    
+                    // Send each test result individually
+                    const savePromises = [];
+                    let totalRequests = 0;
+                    
+                    testResultsData.forEach(test => {
+                        test.responses.forEach((response, index) => {
+                            if (!response) return; // Skip if no response
+                            
+                            totalRequests++;
+                            
+                            const testData = {
+                                fullName: fullName,
+                                email: email,
+                                userID: userID,
+                                testName: test.name,
+                                promptNumber: index + 1,
+                                userAnswer: response.selectedZone || '',
+                                correctAnswer: response.correctZone || '',
+                                responseTime: response.responseTime || 0,
+                                sessionId: sessionId || sessionStorage.getItem('sessionId')
+                            };
+                            
+                            // Add timestamp to ensure unique requests
+                            testData.timestamp = new Date().toISOString();
+                            
+                            // Send each test result as a separate request
+                            savePromises.push(
+                                fetch('submit.php', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    },
+                                    body: JSON.stringify(testData),
+                                    credentials: 'same-origin' // Include cookies for session
+                                })
+                                .then(async resp => {
+                                    const data = await resp.json();
+                                    if (!resp.ok) {
+                                        console.error('Error saving result:', data);
+                                        throw new Error(data.message || `HTTP error! status: ${resp.status}`);
+                                    }
+                                    return data;
+                                })
+                                .catch(error => {
+                                    console.error('Error in save promise:', error);
+                                    throw error; // Re-throw to be caught by Promise.all
+                                })
+                            );
+                        });
+                    });
+                    
+                    if (totalRequests === 0) {
+                        console.warn('No test results to save');
+                        return { success: true, message: 'No results to save' };
+                    }
+                    
+                    // Wait for all saves to complete
+                    const results = await Promise.all(savePromises);
+                    console.log('All results saved successfully:', results);
+                    
+                    return { 
+                        success: true, 
+                        message: 'All test results saved successfully',
+                        savedCount: results.length
+                    };
+                    
+                } catch (error) {
+                    console.error('Error saving results:', error);
+                    // Even if saving fails, we'll still show the results to the user
+                    return { 
+                        success: false, 
+                        message: error.message,
+                        error: error.toString()
+                    };
+                }
+            }
+
+            // Show the final results
+            async function showResults() {
+                showScreen('results');
+                
+                // Generate results HTML
+                let resultsHTML = '<h2>Test Results</h2>';
+                
+                testResultsData.forEach((test, index) => {
+                    resultsHTML += `
+                        <div class="test-result">
+                            <h4>Test ${index + 1}: ${test.name}</h4>
+                            <p>${test.description}</p>
+                            <p>Score: ${test.score.correct} / ${test.score.total} (${test.score.percentage}%)</p>
+                            <p>Average Response Time: ${test.score.avgResponseTime}ms</p>
+                            <div class="score-bar">
+                                ${Array(test.entries).fill().map((_, i) => {
+                                    const response = test.responses[i];
+                                    if (!response) return `<div class="score-indicator">${i+1}</div>`;
+                                    return `<div class="score-indicator ${response.isCorrect ? 'correct' : 'incorrect'}">
+                                        ${response.isCorrect ? '✓' : '✕'}
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Calculate overall score
+                const totalCorrect = testResultsData.reduce((sum, test) => sum + test.score.correct, 0);
+                const totalTrials = testResultsData.reduce((sum, test) => sum + test.score.total, 0);
+                const overallPercentage = Math.round((totalCorrect / totalTrials) * 100);
+                const avgResponseTime = Math.round(
+                    testResultsData.reduce((sum, test) => sum + test.score.avgResponseTime, 0) / testResultsData.length
+                );
+                
+                const summaryHTML = `
+                    <div class="summary">
+                        <h3>Summary</h3>
+                        <p>Overall Score: ${totalCorrect} / ${totalTrials} (${overallPercentage}%)</p>
+                        <p>Average Response Time: ${avgResponseTime}ms</p>
+                        <div id="saveStatus"></div>
+                        <button id="restartButton" class="btn">Restart Test</button>
+                    </div>
+                `;
+                
+                testResults.innerHTML = resultsHTML;
+                finalResults.innerHTML = summaryHTML;
+                
+                // Add event listener for restart button
+                document.getElementById('restartButton').addEventListener('click', startTests);
+                
+                // Save results to the server
+                const saveStatus = document.getElementById('saveStatus');
+                saveStatus.textContent = 'Saving results...';
+                
+                try {
+                    const result = await saveResults();
+                    if (result && result.success) {
+                        saveStatus.textContent = 'Results saved successfully!';
+                        saveStatus.style.color = 'green';
+                    } else {
+                        saveStatus.textContent = 'Error saving results. Please try again.';
+                        saveStatus.style.color = 'red';
+                        console.error('Failed to save results:', result?.message);
+                    }
+                } catch (error) {
+                    saveStatus.textContent = 'Error saving results. Please try again.';
+                    saveStatus.style.color = 'red';
+                    console.error('Error saving results:', error);
+                }
+            }
+            
+            // Generate a random sequence of answers with no more than 3 of the same answer in a row
+            function generateAnswerSequence(length, zones) {
+                const sequence = [];
+                let lastZone = null;
+                let repeatCount = 0;
+                
+                for (let i = 0; i < length; i++) {
+                    // Filter out the last zone if it's been repeated 3 times
+                    const availableZones = repeatCount >= 3 
+                        ? zones.filter(zone => zone !== lastZone)
+                        : [...zones];
+                    
+                    // Randomly select a zone from available zones
+                    const randomIndex = Math.floor(Math.random() * availableZones.length);
+                    const selectedZone = availableZones[randomIndex];
+                    
+                    // Update repeat count
+                    if (selectedZone === lastZone) {
+                        repeatCount++;
+                    } else {
+                        repeatCount = 1;
+                        lastZone = selectedZone;
+                    }
+                    
+                    sequence.push(selectedZone);
+                }
+                
+                return sequence;
+            }
+            
+            // Start the application
+            init();
+        });
+    </script>
+</body>
+</html>

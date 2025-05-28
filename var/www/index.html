@@ -255,6 +255,24 @@
                     
                     // Handle success
                     if (result.success) {
+                        // Store user info in sessionStorage
+                        const userInfo = {
+                            fullName: formDataObj.fullName,
+                            email: formDataObj.email,
+                            userID: result.userID || md5(formDataObj.email.toLowerCase())
+                        };
+                        
+                        sessionStorage.setItem('userInfo', JSON.stringify(userInfo));
+                        
+                        // Store session ID if provided by the server
+                        if (result.sessionId) {
+                            sessionStorage.setItem('sessionId', result.sessionId);
+                        } else {
+                            // Generate a new session ID if none provided
+                            const newSessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+                            sessionStorage.setItem('sessionId', newSessionId);
+                        }
+                        
                         // Redirect to instructions page
                         window.location.href = 'instructions.html';
                     } else {
