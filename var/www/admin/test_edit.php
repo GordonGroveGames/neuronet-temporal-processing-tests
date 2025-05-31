@@ -142,8 +142,34 @@ if (empty($parameters)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $testId ? 'Edit' : 'Add'; ?> Test - NeuroNet Tests</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
     <style>
+        .preview-container {
+            margin-top: 10px;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            display: block;
+            margin: 10px 0;
+        }
+        .preview-audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .remove-asset {
+            margin-top: 5px;
+        }
+        .upload-button {
+            margin-bottom: 10px;
+        }
+        .file-input {
+            display: none;
+        }
         .sidebar {
             min-height: 100vh;
             background-color: #343a40;
@@ -188,12 +214,6 @@ if (empty($parameters)) {
             padding: 10px;
             background-color: #f8f9fa;
             border-radius: 5px;
-        }
-        .preview-image {
-            max-width: 100px;
-            max-height: 100px;
-            margin-top: 10px;
-            display: none;
         }
     </style>
 </head>
@@ -250,7 +270,7 @@ if (empty($parameters)) {
                     </div>
                 <?php endif; ?>
                 
-                <form method="POST" action="" enctype="multipart/form-data">
+                <form method="POST" action="" enctype="multipart/form-data" id="testForm">
                     <div class="card mb-4">
                         <div class="card-header">
                             Test Information
@@ -282,45 +302,108 @@ if (empty($parameters)) {
                                 <div class="col-md-4 mb-3">
                                     <h5>Left Section</h5>
                                     <div class="mb-3">
-                                        <label for="left_image" class="form-label">Image</label>
-                                        <input type="text" class="form-control" id="left_image" name="left_image" 
-                                               value="<?php echo htmlspecialchars($test['left_image'] ?? ''); ?>">
-                                        <img src="" id="left_image_preview" class="preview-image" alt="Left Image Preview">
+                                        <label class="form-label">Image</label>
+                                        <div>
+                                            <button type="button" class="btn btn-primary btn-sm upload-button" onclick="document.getElementById('left_image_file').click()">
+                                                <i class="bi bi-upload"></i> Upload Image
+                                            </button>
+                                            <input type="file" id="left_image_file" class="file-input" accept="image/*" onchange="handleFileSelect(this, 'left-image', 'image')">
+                                            <input type="hidden" name="left_image" value="<?php echo htmlspecialchars($test['left_image'] ?? ''); ?>" id="left_image">
+                                        </div>
+                                        <div class="preview-container" id="left-image-preview" style="display: none;">
+                                            <img src="" class="preview-image" id="left-image-preview-img">
+                                            <div class="remove-asset" onclick="removeAsset('left-image')">
+                                                <i class="bi bi-x"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="left_sound" class="form-label">Sound</label>
-                                        <input type="text" class="form-control" id="left_sound" name="left_sound" 
-                                               value="<?php echo htmlspecialchars($test['left_sound'] ?? ''); ?>">
+                                        <label class="form-label">Sound</label>
+                                        <div>
+                                            <button type="button" class="btn btn-primary btn-sm upload-button" onclick="document.getElementById('left_sound_file').click()">
+                                                <i class="bi bi-upload"></i> Upload Audio
+                                            </button>
+                                            <input type="file" id="left_sound_file" class="file-input" accept="audio/*" onchange="handleFileSelect(this, 'left-sound', 'audio')">
+                                            <input type="hidden" name="left_sound" value="<?php echo htmlspecialchars($test['left_sound'] ?? ''); ?>" id="left_sound">
+                                        </div>
+                                        <div class="preview-container" id="left-sound-preview" style="display: none;">
+                                            <audio controls class="preview-audio" id="left-sound-preview-audio"></audio>
+                                            <div class="remove-asset" onclick="removeAsset('left-sound')">
+                                                <i class="bi bi-x"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <div class="col-md-4 mb-3">
                                     <h5>Center Section</h5>
                                     <div class="mb-3">
-                                        <label for="center_image" class="form-label">Image</label>
-                                        <input type="text" class="form-control" id="center_image" name="center_image" 
-                                               value="<?php echo htmlspecialchars($test['center_image'] ?? ''); ?>">
-                                        <img src="" id="center_image_preview" class="preview-image" alt="Center Image Preview">
+                                        <label class="form-label">Image</label>
+                                        <div>
+                                            <button type="button" class="btn btn-primary btn-sm upload-button" onclick="document.getElementById('center_image_file').click()">
+                                                <i class="bi bi-upload"></i> Upload Image
+                                            </button>
+                                            <input type="file" id="center_image_file" class="file-input" accept="image/*" onchange="handleFileSelect(this, 'center-image', 'image')">
+                                            <input type="hidden" name="center_image" value="<?php echo htmlspecialchars($test['center_image'] ?? ''); ?>" id="center_image">
+                                        </div>
+                                        <div class="preview-container" id="center-image-preview" style="display: none;">
+                                            <img src="" class="preview-image" id="center-image-preview-img">
+                                            <div class="remove-asset" onclick="removeAsset('center-image')">
+                                                <i class="bi bi-x"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="center_sound" class="form-label">Sound</label>
-                                        <input type="text" class="form-control" id="center_sound" name="center_sound" 
-                                               value="<?php echo htmlspecialchars($test['center_sound'] ?? ''); ?>">
+                                        <label class="form-label">Sound</label>
+                                        <div>
+                                            <button type="button" class="btn btn-primary btn-sm upload-button" onclick="document.getElementById('center_sound_file').click()">
+                                                <i class="bi bi-upload"></i> Upload Audio
+                                            </button>
+                                            <input type="file" id="center_sound_file" class="file-input" accept="audio/*" onchange="handleFileSelect(this, 'center-sound', 'audio')">
+                                            <input type="hidden" name="center_sound" value="<?php echo htmlspecialchars($test['center_sound'] ?? ''); ?>" id="center_sound">
+                                        </div>
+                                        <div class="preview-container" id="center-sound-preview" style="display: none;">
+                                            <audio controls class="preview-audio" id="center-sound-preview-audio"></audio>
+                                            <div class="remove-asset" onclick="removeAsset('center-sound')">
+                                                <i class="bi bi-x"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <div class="col-md-4 mb-3">
                                     <h5>Right Section</h5>
                                     <div class="mb-3">
-                                        <label for="right_image" class="form-label">Image</label>
-                                        <input type="text" class="form-control" id="right_image" name="right_image" 
-                                               value="<?php echo htmlspecialchars($test['right_image'] ?? ''); ?>">
-                                        <img src="" id="right_image_preview" class="preview-image" alt="Right Image Preview">
+                                        <label class="form-label">Image</label>
+                                        <div>
+                                            <button type="button" class="btn btn-primary btn-sm upload-button" onclick="document.getElementById('right_image_file').click()">
+                                                <i class="bi bi-upload"></i> Upload Image
+                                            </button>
+                                            <input type="file" id="right_image_file" class="file-input" accept="image/*" onchange="handleFileSelect(this, 'right-image', 'image')">
+                                            <input type="hidden" name="right_image" value="<?php echo htmlspecialchars($test['right_image'] ?? ''); ?>" id="right_image">
+                                        </div>
+                                        <div class="preview-container" id="right-image-preview" style="display: none;">
+                                            <img src="" class="preview-image" id="right-image-preview-img">
+                                            <div class="remove-asset" onclick="removeAsset('right-image')">
+                                                <i class="bi bi-x"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="right_sound" class="form-label">Sound</label>
-                                        <input type="text" class="form-control" id="right_sound" name="right_sound" 
-                                               value="<?php echo htmlspecialchars($test['right_sound'] ?? ''); ?>">
+                                        <label class="form-label">Sound</label>
+                                        <div>
+                                            <button type="button" class="btn btn-primary btn-sm upload-button" onclick="document.getElementById('right_sound_file').click()">
+                                                <i class="bi bi-upload"></i> Upload Audio
+                                            </button>
+                                            <input type="file" id="right_sound_file" class="file-input" accept="audio/*" onchange="handleFileSelect(this, 'right-sound', 'audio')">
+                                            <input type="hidden" name="right_sound" value="<?php echo htmlspecialchars($test['right_sound'] ?? ''); ?>" id="right_sound">
+                                        </div>
+                                        <div class="preview-container" id="right-sound-preview" style="display: none;">
+                                            <audio controls class="preview-audio" id="right-sound-preview-audio"></audio>
+                                            <div class="remove-asset" onclick="removeAsset('right-sound')">
+                                                <i class="bi bi-x"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -330,16 +413,36 @@ if (empty($parameters)) {
                                     <h5>Feedback Images</h5>
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label for="correct_image" class="form-label">Correct Answer</label>
-                                            <input type="text" class="form-control" id="correct_image" name="correct_image" 
-                                                   value="<?php echo htmlspecialchars($test['correct_image'] ?? ''); ?>">
-                                            <img src="" id="correct_image_preview" class="preview-image" alt="Correct Image Preview">
+                                            <label class="form-label">Correct Answer</label>
+                                            <div>
+                                                <button type="button" class="btn btn-primary btn-sm upload-button" onclick="document.getElementById('correct_image_file').click()">
+                                                    <i class="bi bi-upload"></i> Upload Correct Image
+                                                </button>
+                                                <input type="file" id="correct_image_file" class="file-input" accept="image/*" onchange="handleFileSelect(this, 'correct-image', 'image')">
+                                                <input type="hidden" name="correct_image" value="<?php echo htmlspecialchars($test['correct_image'] ?? ''); ?>" id="correct_image">
+                                            </div>
+                                            <div class="preview-container" id="correct-image-preview" style="display: none;">
+                                                <img src="" class="preview-image" id="correct-image-preview-img">
+                                                <div class="remove-asset" onclick="removeAsset('correct-image')">
+                                                    <i class="bi bi-x"></i>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label for="incorrect_image" class="form-label">Incorrect Answer</label>
-                                            <input type="text" class="form-control" id="incorrect_image" name="incorrect_image" 
-                                                   value="<?php echo htmlspecialchars($test['incorrect_image'] ?? ''); ?>">
-                                            <img src="" id="incorrect_image_preview" class="preview-image" alt="Incorrect Image Preview">
+                                            <label class="form-label">Incorrect Answer</label>
+                                            <div>
+                                                <button type="button" class="btn btn-primary btn-sm upload-button" onclick="document.getElementById('incorrect_image_file').click()">
+                                                    <i class="bi bi-upload"></i> Upload Incorrect Image
+                                                </button>
+                                                <input type="file" id="incorrect_image_file" class="file-input" accept="image/*" onchange="handleFileSelect(this, 'incorrect-image', 'image')">
+                                                <input type="hidden" name="incorrect_image" value="<?php echo htmlspecialchars($test['incorrect_image'] ?? ''); ?>" id="incorrect_image">
+                                            </div>
+                                            <div class="preview-container" id="incorrect-image-preview" style="display: none;">
+                                                <img src="" class="preview-image" id="incorrect-image-preview-img">
+                                                <div class="remove-asset" onclick="removeAsset('incorrect-image')">
+                                                    <i class="bi bi-x"></i>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -400,73 +503,284 @@ if (empty($parameters)) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Add parameter row
-        document.getElementById('addParameter').addEventListener('click', function() {
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add parameter row function
+            window.addParameterRow = function() {
+                const container = document.getElementById('parametersContainer');
+                const rowCount = container.querySelectorAll('.parameter-row').length;
+                const newRow = document.createElement('div');
+                newRow.className = 'parameter-row mb-3';
+                newRow.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" name="parameters[${rowCount}][name]" placeholder="Parameter name" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" name="parameters[${rowCount}][value]" placeholder="Value" required>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="parameters[${rowCount}][type]">
+                                <option value="string">String</option>
+                                <option value="number">Number</option>
+                                <option value="boolean">Boolean</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-danger btn-sm remove-parameter">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(newRow);
+                
+                // Add event listener to the new remove button
+                newRow.querySelector('.remove-parameter').addEventListener('click', function() {
+                    container.removeChild(newRow);
+                    // Rename remaining parameters to maintain array indices
+                    const rows = container.querySelectorAll('.parameter-row');
+                    rows.forEach((row, index) => {
+                        const inputs = row.querySelectorAll('input, select');
+                        inputs.forEach(input => {
+                            input.name = input.name.replace(/\[\d+\]/, `[${index}]`);
+                        });
+                    });
+                });
+            };
+            
+            // Add initial parameter row if none exists
             const container = document.getElementById('parametersContainer');
-            const newRow = document.createElement('div');
-            newRow.className = 'parameter-row';
-            newRow.innerHTML = `
-                <div class="row">
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" name="param_name[]" placeholder="Parameter name" required>
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" name="param_value[]" placeholder="Value">
-                    </div>
-                    <div class="col-md-3">
-                        <select class="form-select" name="param_type[]">
-                            <option value="string">String</option>
-                            <option value="number">Number</option>
-                            <option value="boolean">Boolean</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1">
-                        <button type="button" class="btn btn-danger btn-sm remove-parameter">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(newRow);
+            if (container.querySelectorAll('.parameter-row').length === 0) {
+                addParameterRow();
+            }
             
-            // Add event listener to the new remove button
-            newRow.querySelector('.remove-parameter').addEventListener('click', function() {
-                container.removeChild(newRow);
-            });
-        });
-        
-        // Add event listeners to existing remove buttons
-        document.querySelectorAll('.remove-parameter').forEach(button => {
-            button.addEventListener('click', function() {
-                this.closest('.parameter-row').remove();
-            });
-        });
-        
-        // Image preview
-        function setupImagePreview(inputId, previewId) {
-            const input = document.getElementById(inputId);
-            const preview = document.getElementById(previewId);
+            // Add event listener to the add parameter button
+            document.getElementById('addParameter').addEventListener('click', addParameterRow);
             
-            input.addEventListener('input', function() {
-                if (this.value) {
-                    preview.src = this.value;
-                    preview.style.display = 'block';
-                } else {
-                    preview.style.display = 'none';
+            // Load existing previews if editing
+            <?php if ($test): ?>
+                <?php if (!empty($test['left_image'])): ?>updatePreview('left-image', '<?php echo $test['left_image']; ?>', 'image');<?php endif; ?>
+                <?php if (!empty($test['center_image'])): ?>updatePreview('center-image', '<?php echo $test['center_image']; ?>', 'image');<?php endif; ?>
+                <?php if (!empty($test['right_image'])): ?>updatePreview('right-image', '<?php echo $test['right_image']; ?>', 'image');<?php endif; ?>
+                <?php if (!empty($test['correct_image'])): ?>updatePreview('correct-image', '<?php echo $test['correct_image']; ?>', 'image');<?php endif; ?>
+                <?php if (!empty($test['incorrect_image'])): ?>updatePreview('incorrect-image', '<?php echo $test['incorrect_image']; ?>', 'image');<?php endif; ?>
+                <?php if (!empty($test['left_sound'])): ?>updatePreview('left-sound', '<?php echo $test['left_sound']; ?>', 'audio');<?php endif; ?>
+                <?php if (!empty($test['center_sound'])): ?>updatePreview('center-sound', '<?php echo $test['center_sound']; ?>', 'audio');<?php endif; ?>
+                <?php if (!empty($test['right_sound'])): ?>updatePreview('right-sound', '<?php echo $test['right_sound']; ?>', 'audio');<?php endif; ?>
+            <?php endif; ?>
+            
+            // Add initial parameter row for new tests
+            <?php if ($test && empty($test['id'])): ?>
+                addParameterRow();
+            <?php endif; ?>
+        });
+
+        // Remove asset
+        function removeAsset(elementId) {
+            const previewContainer = document.getElementById(`${elementId}-preview`);
+            const hiddenInput = document.getElementById(elementId);
+            const fileInput = document.getElementById(`${elementId}_file`);
+            const previewElement = previewContainer ? previewContainer.querySelector('img, audio') : null;
+            
+            // Reset file input
+            if (fileInput) fileInput.value = '';
+            
+            // Clear hidden input
+            if (hiddenInput) hiddenInput.value = '';
+            
+            // Hide preview and clear source
+            if (previewElement) {
+                previewElement.src = '';
+                if (previewContainer) {
+                    previewContainer.style.display = 'none';
                 }
-            });
-            
-            // Trigger input event to show initial preview if value exists
-            if (input.value) {
-                input.dispatchEvent(new Event('input'));
+            }
+        }
+
+        // Handle file selection
+        function handleFileSelect(input, elementId, type) {
+            if (input.files && input.files[0]) {
+                handleFiles(input, elementId, type);
             }
         }
         
-        // Set up all image previews
-        setupImagePreview('left_image', 'left_image_preview');
-        setupImagePreview('center_image', 'center_image_preview');
-        setupImagePreview('right_image', 'right_image_preview');
-        setupImagePreview('correct_image', 'correct_image_preview');
-        setupImagePreview('incorrect_image', 'incorrect_image_preview');
+        // Handle file upload
+        function handleFiles(input, elementId, type) {
+            const files = input.files;
+            if (!files || files.length === 0) return;
+            
+            const file = files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Find the closest button to show loading state
+            const button = input.closest('div').querySelector('button');
+            let originalHTML = '';
+            if (button) {
+                originalHTML = button.innerHTML;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
+                button.disabled = true;
+            }
+            
+            // Show success message function
+            const showSuccess = (message) => {
+                console.log('Success:', message);
+                
+                // Create or update success message element
+                let successElement = document.getElementById(`${elementId}-success`);
+                if (!successElement) {
+                    successElement = document.createElement('div');
+                    successElement.id = `${elementId}-success`;
+                    successElement.className = 'text-success mt-1 small';
+                    input.parentNode.insertBefore(successElement, input.nextSibling);
+                }
+                successElement.textContent = message;
+                
+                // Auto-hide after 3 seconds
+                setTimeout(() => {
+                    if (successElement) {
+                        successElement.remove();
+                    }
+                }, 3000);
+                
+                // Clear any existing error
+                const errorElement = document.getElementById(`${elementId}-error`);
+                if (errorElement) {
+                    errorElement.remove();
+                }
+            };
+            
+            // Show error message function
+            const showError = (message, responseText) => {
+                console.error('Upload error:', message);
+                console.log('Server response:', responseText);
+                
+                // Create or update error message element
+                let errorElement = document.getElementById(`${elementId}-error`);
+                if (!errorElement) {
+                    errorElement = document.createElement('div');
+                    errorElement.id = `${elementId}-error`;
+                    errorElement.className = 'text-danger mt-1 small';
+                    input.parentNode.insertBefore(errorElement, input.nextSibling);
+                }
+                errorElement.textContent = message;
+                
+                // Clear any existing success message
+                const successElement = document.getElementById(`${elementId}-success`);
+                if (successElement) {
+                    successElement.remove();
+                }
+                
+                // Show alert with more details in development
+                const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                if (isDev || message.includes('Unauthorized') || message.includes('Failed to create')) {
+                    alert('Upload Error: ' + message + (responseText ? '\n\nServer response: ' + responseText : ''));
+                }
+            };
+            
+            // Clear any previous error
+            const prevError = document.getElementById(`${elementId}-error`);
+            if (prevError) {
+                prevError.remove();
+            }
+            
+            // Upload file
+            fetch('/admin/handlers/upload.php', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin', // Include cookies for authentication
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' // Indicate this is an AJAX request
+                }
+            })
+            .then(async response => {
+                // First, read the response as text
+                const responseText = await response.text();
+                let data;
+                
+                try {
+                    // Try to parse the response as JSON
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('Failed to parse response:', responseText);
+                    // If parsing as JSON fails, check if it's an HTML response (redirect to login)
+                    if (responseText.trim().startsWith('<!DOCTYPE html>') || 
+                        responseText.includes('<html') || 
+                        responseText.includes('<!DOCTYPE')) {
+                        window.location.href = '/admin/login.php?redirect=' + encodeURIComponent(window.location.pathname);
+                        return;
+                    }
+                    throw new Error('Invalid server response');
+                }
+                
+                // Check for redirect in the response (for session expiration)
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                    return;
+                }
+                
+                // Handle non-OK responses
+                if (!response.ok) {
+                    // If unauthorized, redirect to login
+                    if (response.status === 401) {
+                        window.location.href = '/admin/login.php?redirect=' + encodeURIComponent(window.location.pathname);
+                        return;
+                    }
+                    throw new Error(data?.error || `Server returned ${response.status} status`);
+                }
+                
+                // If we got here, the request was successful
+                if (!data || data.success === false) {
+                    throw new Error(data?.error || 'Upload failed');
+                }
+                
+                // Update hidden input with file path
+                const hiddenInput = document.getElementById(elementId);
+                if (hiddenInput && data.filePath) {
+                    hiddenInput.value = data.filePath;
+                }
+                
+                // Update preview
+                updatePreview(elementId, data.filePath, type);
+                
+                // Clear the file input to allow re-uploading the same file
+                input.value = '';
+                
+                // Show success message
+                showSuccess('File uploaded successfully');
+                
+            })
+            .catch(error => {
+                // Don't show error if we're already redirecting
+                if (!window.location.href.includes('login.php')) {
+                    showError(error.message || 'Error uploading file', error.responseText || '');
+                }
+            })
+            .finally(() => {
+                // Always restore button state
+                if (button) {
+                    button.innerHTML = originalHTML;
+                    button.disabled = false;
+                }
+            });
+        }
+        
+        // Update preview for an element
+        function updatePreview(elementId, filePath, type = 'image') {
+            const previewContainer = document.getElementById(`${elementId}-preview`);
+            const previewElement = type === 'image' 
+                ? document.getElementById(`${elementId}-preview-img`)
+                : document.getElementById(`${elementId}-preview-audio`);
+            
+            if (previewElement) {
+                previewElement.src = filePath;
+                previewElement.style.display = 'block';
+            }
+            
+            if (previewContainer) {
+                previewContainer.style.display = 'block';
+            }
+        }
     </script>
 </body>
 </html>
