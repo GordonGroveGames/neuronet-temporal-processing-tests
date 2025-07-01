@@ -1,3 +1,13 @@
+<?php
+require_once __DIR__ . '/check_test_session.php';
+require_test_user_login();
+
+$userInfo = get_test_user_info();
+if (!$userInfo) {
+    header('Location: login.php');
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -120,32 +130,34 @@
         .test-section {
             flex: 1;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             border-right: 1px solid #f0f0f0;
             cursor: pointer;
-            transition: all 0.3s ease;
             font-size: 24px;
             font-weight: 600;
             user-select: none;
             position: relative;
             overflow: hidden;
+            padding: 20px;
+        }
+        
+        .test-image {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
         
         .test-section:last-child {
             border-right: none;
         }
         
-        .test-section:hover:not(.disabled) {
-            background-color: #f8f9fa;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            z-index: 1;
-        }
-        
-        .test-section:active:not(.disabled) {
-            transform: translateY(0);
-        }
         
         .test-section.correct {
             background-color: rgba(46, 213, 115, 0.15);
@@ -165,13 +177,12 @@
         .test-label {
             padding: 10px 20px;
             border-radius: 20px;
-            background-color: rgba(52, 152, 219, 0.1);
-            color: #3498db;
-            transition: all 0.3s;
-        }
-        
-        .test-section:hover .test-label {
-            background-color: rgba(52, 152, 219, 0.2);
+            background-color: rgba(52, 152, 219, 0.9);
+            color: white;
+            position: relative;
+            z-index: 2;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
         
         /* Score Bar */
@@ -292,42 +303,66 @@
                 padding: 10px;
             }
         }
+        
+        /* Click to Start Overlay */
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .countdown-content {
+            text-align: center;
+        }
+        
+        .countdown-number {
+            font-size: 80px;
+            font-weight: bold;
+            color: #28a745;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .countdown-number:hover {
+            transform: scale(1.05);
+            color: #34ce57;
+        }
     </style>
 </head>
 <body>
     <div class="test-container">
-        <!-- Start Screen -->
-        <div id="startScreen" class="screen">
-            <div class="container">
-                <h1>NeuroNet Temporal Processing Test</h1>
-                <p style="text-align: center; font-weight: bold; margin: 20px 0;">Tap the picture of the sound you hear</p>
-                <div style="text-align: center; margin: 20px 0;">
-                    <video width="600" height="200" autoplay loop muted playsinline style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                        <source src="https://assets.codepen.io/3364143/7b5d4d3b-4883-46e6-9d1a-917d2ac6bc21.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-                <button id="startButton" class="btn">Start Test</button>
+        <!-- Click to Start Overlay -->
+        <div id="countdownOverlay" class="countdown-overlay" style="display: none;">
+            <div class="countdown-content">
+                <div id="countdownNumber" class="countdown-number">Click to Start</div>
             </div>
         </div>
 
         <!-- Test Screen -->
-        <div id="testScreen" class="screen" style="display: none;">
+        <div id="testScreen" class="screen">
             <div class="test-header">
-                <div id="progressText" class="progress-text">Test 1 of 6: Loading...</div>
-                <div class="progress-container">
-                    <div id="progressBar" class="progress-bar"></div>
-                </div>
+                <div id="progressText" class="progress-text">Test 1 of 1: Loading...</div>
             </div>
             
             <div class="test-area">
                 <div class="test-section" data-zone="Left">
+                    <img class="test-image" src="" alt="Left option" style="display: none;">
                     <span class="test-label">Left</span>
                 </div>
                 <div class="test-section" data-zone="Center">
+                    <img class="test-image" src="" alt="Center option" style="display: none;">
                     <span class="test-label">Center</span>
                 </div>
                 <div class="test-section" data-zone="Right">
+                    <img class="test-image" src="" alt="Right option" style="display: none;">
                     <span class="test-label">Right</span>
                 </div>
             </div>
@@ -349,102 +384,128 @@
     </div>
     
     <script>
+        // Set user session data from PHP session
+        const userInfo = {
+            fullName: <?= json_encode($userInfo['username']) ?>,
+            email: <?= json_encode($userInfo['email']) ?>,
+            userID: <?= json_encode($userInfo['email']) ?> // Using email as userID
+        };
+        
+        // Store in sessionStorage for the saveResults function
+        sessionStorage.setItem('userInfo', JSON.stringify(userInfo));
+        
+        // Generate and store session ID if not exists
+        if (!sessionStorage.getItem('sessionId')) {
+            const sessionId = 'sess_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+            sessionStorage.setItem('sessionId', sessionId);
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             // DOM Elements
-            const startScreen = document.getElementById('startScreen');
             const testScreen = document.getElementById('testScreen');
             const resultsScreen = document.getElementById('resultsScreen');
-            const startButton = document.getElementById('startButton');
+            const countdownOverlay = document.getElementById('countdownOverlay');
+            const countdownNumber = document.getElementById('countdownNumber');
             const testSections = document.querySelectorAll('.test-section');
             const scoreBar = document.getElementById('scoreBar');
             const progressText = document.getElementById('progressText');
-            const progressBar = document.getElementById('progressBar');
             const testResults = document.getElementById('testResults');
             const finalResults = document.getElementById('finalResults');
             
-            // Test configuration
-            const TESTS = [
-                {
-                    id: 'visual',
-                    name: 'Visual Only',
-                    description: 'Respond to visual cues only',
-                    type: 'visual',
-                    entries: 15,
-                    zones: ['Left', 'Center', 'Right']
-                },
-                {
-                    id: 'auditory',
-                    name: 'Auditory Only',
-                    description: 'Respond to auditory cues only',
-                    type: 'auditory',
-                    entries: 15,
-                    zones: ['Left', 'Center', 'Right']
-                },
-                {
-                    id: 'both',
-                    name: 'Visual + Auditory',
-                    description: 'Respond to combined visual and auditory cues',
-                    type: 'both',
-                    entries: 15,
-                    zones: ['Left', 'Center', 'Right']
-                },
-                {
-                    id: 'distraction',
-                    name: 'With Distraction',
-                    description: 'Respond with visual and auditory distractions',
-                    type: 'both',
-                    entries: 15,
-                    zones: ['Left', 'Center', 'Right'],
-                    distraction: true
-                },
-                {
-                    id: 'variable',
-                    name: 'Variable Timing',
-                    description: 'Respond with variable timing between cues',
-                    type: 'both',
-                    entries: 15,
-                    zones: ['Left', 'Center', 'Right'],
-                    variableTiming: true
-                },
-                {
-                    id: 'combined',
-                    name: 'Combined Challenge',
-                    description: 'Combined challenges with distractions and variable timing',
-                    type: 'both',
-                    entries: 15,
-                    zones: ['Left', 'Center', 'Right'],
-                    distraction: true,
-                    variableTiming: true
-                }
-            ];
+            // Test configuration - will be loaded from admin assessments
+            let TESTS = [];
             
             // Test state
             let currentTestIndex = 0;
             let currentTest = null;
             let testResultsData = [];
             
-            // Initialize the application
-            function init() {
-                // Show start screen
-                showScreen('start');
+            // Audio preloading and management
+            let preloadedAudio = {};
+            let currentAudio = null;
+            
+            // Preload audio files for faster playback
+            function preloadTestAudio() {
+                if (!currentTest || !currentTest.sounds) return;
                 
+                const sounds = [
+                    currentTest.sounds.left,
+                    currentTest.sounds.center,
+                    currentTest.sounds.right
+                ];
+                
+                sounds.forEach(soundUrl => {
+                    if (soundUrl && !preloadedAudio[soundUrl]) {
+                        const audio = new Audio();
+                        audio.preload = 'auto';
+                        audio.src = soundUrl;
+                        audio.volume = 0.7;
+                        
+                        // Keep reference for reuse
+                        preloadedAudio[soundUrl] = audio;
+                        
+                        // Start loading immediately
+                        audio.load();
+                    }
+                });
+            }
+            
+            // Load assessments from admin data
+            async function loadAssessments() {
+                try {
+                    const response = await fetch('get_assessments.php');
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        throw new Error(data.error || 'Failed to load assessments');
+                    }
+                    
+                    // Flatten all tests from all assessments into a single test array
+                    TESTS = [];
+                    data.assessments.forEach(assessment => {
+                        TESTS.push(...assessment.tests);
+                    });
+                    
+                    if (TESTS.length === 0) {
+                        throw new Error('No tests found in assessments');
+                    }
+                    
+                    console.log('Loaded', TESTS.length, 'tests from assessments');
+                    return true;
+                    
+                } catch (error) {
+                    console.error('Error loading assessments:', error);
+                    // Fallback to a basic test if assessments fail to load
+                    TESTS = [{
+                        id: 'fallback',
+                        name: 'Basic Test',
+                        description: 'Fallback test - please contact administrator',
+                        type: 'fallback',
+                        entries: 5,
+                        zones: ['Left', 'Center', 'Right']
+                    }];
+                    return false;
+                }
+            }
+            
+            // Initialize the application
+            async function init() {
                 // Set up event listeners
-                startButton.addEventListener('click', startTests);
                 testSections.forEach(section => {
                     section.addEventListener('click', handleSectionClick);
                 });
+                
+                // Load assessments then start tests
+                await loadAssessments();
+                startTests();
             }
             
             // Show a specific screen
             function showScreen(screen) {
-                startScreen.style.display = 'none';
                 testScreen.style.display = 'none';
                 resultsScreen.style.display = 'none';
                 
                 switch(screen) {
-                    case 'start':
-                        startScreen.style.display = 'block';
-                        break;
                     case 'test':
                         testScreen.style.display = 'block';
                         break;
@@ -476,18 +537,73 @@
                     answerSequence: generateAnswerSequence(TESTS[currentTestIndex].entries, TESTS[currentTestIndex].zones)
                 };
                 
-                // Update UI
+                // Update UI - format: Test 1 of 1: <test name>
                 progressText.textContent = `Test ${currentTestIndex + 1} of ${TESTS.length}: ${currentTest.name}`;
-                progressBar.style.width = '0%';
                 
                 // Clear previous score indicators
                 updateScoreBar([], currentTest.entries);
                 
+                // Setup test display (images, etc.)
+                setupTestDisplay();
+                
+                // Preload audio for faster playback
+                preloadTestAudio();
+                
                 // Show test screen
                 showScreen('test');
                 
-                // Start the first trial
-                startTrial();
+                // Show click to start overlay
+                showClickToStart();
+            }
+            
+            // Show click to start overlay
+            function showClickToStart() {
+                countdownOverlay.style.display = 'flex';
+                countdownNumber.textContent = 'Click to Start';
+                countdownNumber.className = 'countdown-number';
+                
+                // Make the overlay clickable to start the trial
+                countdownOverlay.onclick = function() {
+                    countdownOverlay.style.display = 'none';
+                    countdownOverlay.onclick = null; // Remove click handler
+                    startTrial();
+                };
+            }
+            
+            // Setup the test display with images and prepare sounds
+            function setupTestDisplay() {
+                const testImages = document.querySelectorAll('.test-image');
+                const testLabels = document.querySelectorAll('.test-label');
+                
+                if (currentTest.type === 'matching' && currentTest.images) {
+                    // Show images for admin-created matching tests
+                    testImages[0].src = currentTest.images.left;
+                    testImages[1].src = currentTest.images.center;
+                    testImages[2].src = currentTest.images.right;
+                    
+                    testImages.forEach(img => {
+                        img.style.display = 'block';
+                        img.onerror = function() {
+                            console.warn('Failed to load image:', this.src);
+                            this.style.display = 'none';
+                        };
+                    });
+                    
+                    // Hide text labels when showing images
+                    testLabels.forEach(label => {
+                        label.style.display = 'none';
+                    });
+                } else {
+                    // Hide images for other test types
+                    testImages.forEach(img => {
+                        img.style.display = 'none';
+                    });
+                    
+                    // Show text labels
+                    testLabels.forEach(label => {
+                        label.style.display = 'block';
+                    });
+                }
             }
             
             // Start a new trial
@@ -517,25 +633,115 @@
                 // Get the correct zone for this trial
                 const correctZone = currentTest.answerSequence[currentTrial];
                 
-                // In a real implementation, we would show the visual/auditory cue here
-                // based on the test type (visual, auditory, or both)
+                // Record trial start time
+                currentTest.lastTrialStart = Date.now();
+                
+                // Play the corresponding sound for admin-created matching tests
+                if (currentTest.type === 'matching' && currentTest.sounds) {
+                    const soundUrl = getSoundForZone(correctZone);
+                    if (soundUrl) {
+                        console.log('Playing sound for zone:', correctZone, 'URL:', soundUrl);
+                        playSound(soundUrl);
+                    } else {
+                        console.warn('No sound URL found for zone:', correctZone);
+                    }
+                } else {
+                    console.warn('No sounds available or not a matching test');
+                }
+                
                 console.log(`Test ${currentTest.name}, Trial ${currentTrial + 1}: ${correctZone}`);
                 
-                // For now, just enable the test sections
+                // Enable the test sections for user interaction
                 enableTestSections();
             }
             
-            // Handle section click during test
+            // Get the sound URL for a specific zone
+            function getSoundForZone(zone) {
+                if (!currentTest.sounds) return null;
+                
+                switch (zone) {
+                    case 'Left':
+                        return currentTest.sounds.left;
+                    case 'Center':
+                        return currentTest.sounds.center;
+                    case 'Right':
+                        return currentTest.sounds.right;
+                    default:
+                        return null;
+                }
+            }
+            
+            // Play a sound file with minimal latency
+            function playSound(soundUrl) {
+                try {
+                    console.log('Attempting to play sound:', soundUrl);
+                    
+                    // Stop any currently playing audio immediately
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio.currentTime = 0;
+                    }
+                    
+                    // Use preloaded audio if available, otherwise create new
+                    let audio = preloadedAudio[soundUrl];
+                    if (!audio) {
+                        audio = new Audio(soundUrl);
+                        audio.volume = 0.7;
+                        audio.preload = 'auto';
+                        preloadedAudio[soundUrl] = audio;
+                    }
+                    
+                    // Reset to beginning for reuse
+                    audio.currentTime = 0;
+                    audio.volume = 0.7;
+                    
+                    // Set as current audio
+                    currentAudio = audio;
+                    
+                    // Play immediately - no waiting for events
+                    const playPromise = audio.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            console.log('Audio playing successfully');
+                        }).catch(error => {
+                            console.error('Failed to play sound:', error);
+                        });
+                    }
+                    
+                } catch (error) {
+                    console.error('Error in playSound function:', error);
+                }
+            }
+            
+            // Handle section click during test - optimized for minimal audio latency
             function handleSectionClick(event) {
                 if (!currentTest) return;
                 
                 const selectedZone = event.currentTarget.dataset.zone;
                 const currentTrial = currentTest.responses.length;
+                
+                // Check if test is complete first
+                if (currentTrial >= currentTest.entries) {
+                    return; // Ignore clicks after test is done
+                }
+                
                 const correctZone = currentTest.answerSequence[currentTrial];
                 const isCorrect = selectedZone === correctZone;
                 const responseTime = Date.now() - (currentTest.lastTrialStart || currentTest.startTime);
                 
-                // Record the response
+                // PRIORITY 1: Start next audio immediately to minimize latency
+                const nextTrial = currentTrial + 1;
+                if (nextTrial < currentTest.entries) {
+                    const nextCorrectZone = currentTest.answerSequence[nextTrial];
+                    const nextSoundUrl = getSoundForZone(nextCorrectZone);
+                    if (nextSoundUrl) {
+                        playSound(nextSoundUrl); // Play next sound immediately
+                        currentTest.lastTrialStart = Date.now(); // Update trial start time
+                    }
+                }
+                
+                // PRIORITY 2: Record response data
                 currentTest.responses.push({
                     trial: currentTrial + 1,
                     correctZone,
@@ -544,39 +750,28 @@
                     responseTime
                 });
                 
-                // Update UI
-                updateScoreBar(
-                    currentTest.responses.map(r => r.isCorrect),
-                    currentTest.entries
-                );
-                
-                // Visual feedback
-                showFeedback(selectedZone, isCorrect);
-                
-                // Disable sections during feedback
-                disableTestSections();
-                
-                // Move to next trial after a short delay
-                setTimeout(() => {
-                    startTrial();
-                }, 1000);
-            }
-            
-            // Show visual feedback for the selected zone
-            function showFeedback(zone, isCorrect) {
-                testSections.forEach(section => {
-                    if (section.dataset.zone === zone) {
-                        section.classList.add(isCorrect ? 'correct' : 'incorrect');
+                // PRIORITY 3: Update UI (less time-critical)
+                requestAnimationFrame(() => {
+                    updateScoreBar(
+                        currentTest.responses.map(r => r.isCorrect),
+                        currentTest.entries
+                    );
+                    
+                    // Check if test is complete after this response
+                    if (currentTest.responses.length >= currentTest.entries) {
+                        setTimeout(() => {
+                            currentTest.endTime = Date.now();
+                            testResultsData.push({
+                                ...currentTest,
+                                score: calculateScore(currentTest.responses)
+                            });
+                            currentTestIndex++;
+                            startNextTest();
+                        }, 100); // Small delay to let final audio start
                     }
                 });
-                
-                // Remove feedback after animation
-                setTimeout(() => {
-                    testSections.forEach(section => {
-                        section.classList.remove('correct', 'incorrect');
-                    });
-                }, 800);
             }
+            
             
             // Enable test sections for interaction
             function enableTestSections() {
@@ -594,9 +789,8 @@
             
             // Update the progress display
             function updateProgress(current, total) {
-                const percent = Math.round((current / total) * 100);
-                progressBar.style.width = `${percent}%`;
-                progressText.textContent = `Test ${currentTestIndex + 1} of ${TESTS.length}: ${currentTest.name} (${current} of ${total})`;
+                // Keep the header text unchanged - just show test name
+                progressText.textContent = `Test ${currentTestIndex + 1} of ${TESTS.length}: ${currentTest.name}`;
             }
             
             // Update the score bar
@@ -770,6 +964,7 @@
                         <p>Average Response Time: ${avgResponseTime}ms</p>
                         <div id="saveStatus"></div>
                         <button id="restartButton" class="btn">Restart Test</button>
+                        <button id="homeButton" class="btn" style="margin-left: 10px;">Home</button>
                     </div>
                 `;
                 
@@ -778,6 +973,11 @@
                 
                 // Add event listener for restart button
                 document.getElementById('restartButton').addEventListener('click', startTests);
+                
+                // Add event listener for home button
+                document.getElementById('homeButton').addEventListener('click', function() {
+                    window.location.href = 'index.php';
+                });
                 
                 // Save results to the server
                 const saveStatus = document.getElementById('saveStatus');

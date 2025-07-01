@@ -1,40 +1,44 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-#var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# PHP
+*.log
+.htaccess
 
-# Virtual Environment
-venv/
-env/
-ENV/
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
-# IDE
-.idea/
+# Session files
+var/tmp/sessions/*
+!var/tmp/sessions/.gitkeep
+
+# Logs
+var/logs/*
+!var/logs/.gitkeep
+var/private/includes/logs/*
+!var/private/includes/logs/.gitkeep
+
+# User uploads
+var/www/assets/uploads/*
+!var/www/assets/uploads/.gitkeep
+
+# Config files with sensitive data
+config.php
+database.php
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE files
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# OS generated files
+# OS files
 .DS_Store
 .DS_Store?
 ._*
@@ -43,30 +47,12 @@ ENV/
 ehthumbs.db
 Thumbs.db
 
-# Logs and databases
-*.log
-*.sql
-*.sqlite
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
 
-# Environment variables
-.env
-
-# Local development settings
-local_settings.py
-
-# Project specific ignores
-*.wav
-*.mp3
-*.mp4
-*.npy
-*.npz
-*.pkl
-*.h5
-*.hdf5
-*.pt
-*.pth
-*.bin
-*.onnx
-*.tflite
-*.pb
-*.tfl
+# User data files (keep structure but not content)
+var/www/assets/users.json
+var/www/assets/assessments.json
