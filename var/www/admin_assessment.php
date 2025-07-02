@@ -209,6 +209,52 @@ $numTests = $editing ? count($assessment['tests']) : 1;
         });
     }
     
+    function unselectFeedbackFile(type, position, testIndex) {
+        // Clear the hidden input value
+        document.getElementById(type + '_' + position + '_' + testIndex).value = '';
+        
+        // Update selected state
+        const container = document.getElementById(type + '_' + position + '_selector_' + testIndex);
+        container.querySelectorAll('.file-option').forEach(opt => opt.classList.remove('selected'));
+        event.target.closest('.file-option').classList.add('selected');
+    }
+    
+    function validateForm() {
+        const numTests = parseInt(document.getElementById('num_tests').value);
+        const errors = [];
+        
+        for (let i = 0; i < numTests; i++) {
+            const testNum = i + 1;
+            
+            // Check required image fields
+            const leftImage = document.getElementById('image_left_' + i).value;
+            const centerImage = document.getElementById('image_center_' + i).value;
+            const rightImage = document.getElementById('image_right_' + i).value;
+            
+            if (!leftImage) errors.push(`Test ${testNum}: Left Image is required`);
+            if (!centerImage) errors.push(`Test ${testNum}: Center Image is required`);
+            if (!rightImage) errors.push(`Test ${testNum}: Right Image is required`);
+            
+            // Check required audio fields
+            const leftAudio = document.getElementById('audio_left_' + i).value;
+            const centerAudio = document.getElementById('audio_center_' + i).value;
+            const rightAudio = document.getElementById('audio_right_' + i).value;
+            
+            if (!leftAudio) errors.push(`Test ${testNum}: Left Audio is required`);
+            if (!centerAudio) errors.push(`Test ${testNum}: Center Audio is required`);
+            if (!rightAudio) errors.push(`Test ${testNum}: Right Audio is required`);
+            
+            // Feedback images are optional - no validation needed
+        }
+        
+        if (errors.length > 0) {
+            alert('Please fix the following errors:\n\n' + errors.join('\n'));
+            return false;
+        }
+        
+        return true;
+    }
+    
     function playAudio(filePath) {
         // Stop any currently playing audio
         const existingAudio = document.getElementById('preview_audio');
@@ -309,8 +355,10 @@ $numTests = $editing ? count($assessment['tests']) : 1;
                                     }
                                 }
                             }
-                            foreach ($imageFiles as $file): ?>
-                            <div class="file-option" onclick="selectFile('image', 'left', <?= $i ?>, '<?= $file ?>')">
+                            foreach ($imageFiles as $file): 
+                                $isSelected = ($test['left_image'] === 'assets/uploads/' . $file);
+                            ?>
+                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('image', 'left', <?= $i ?>, '<?= $file ?>')">
                                 <img src="assets/uploads/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
                                 <span><?= $file ?></span>
                             </div>
@@ -321,8 +369,10 @@ $numTests = $editing ? count($assessment['tests']) : 1;
                         <label>Center Image</label>
                         <input type="hidden" id="image_center_<?= $i ?>" name="center_image[]" value="<?= htmlspecialchars($test['center_image']) ?>">
                         <div class="file-selector" id="image_center_selector_<?= $i ?>">
-                            <?php foreach ($imageFiles as $file): ?>
-                            <div class="file-option" onclick="selectFile('image', 'center', <?= $i ?>, '<?= $file ?>')">
+                            <?php foreach ($imageFiles as $file): 
+                                $isSelected = ($test['center_image'] === 'assets/uploads/' . $file);
+                            ?>
+                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('image', 'center', <?= $i ?>, '<?= $file ?>')">
                                 <img src="assets/uploads/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
                                 <span><?= $file ?></span>
                             </div>
@@ -333,8 +383,10 @@ $numTests = $editing ? count($assessment['tests']) : 1;
                         <label>Right Image</label>
                         <input type="hidden" id="image_right_<?= $i ?>" name="right_image[]" value="<?= htmlspecialchars($test['right_image']) ?>">
                         <div class="file-selector" id="image_right_selector_<?= $i ?>">
-                            <?php foreach ($imageFiles as $file): ?>
-                            <div class="file-option" onclick="selectFile('image', 'right', <?= $i ?>, '<?= $file ?>')">
+                            <?php foreach ($imageFiles as $file): 
+                                $isSelected = ($test['right_image'] === 'assets/uploads/' . $file);
+                            ?>
+                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('image', 'right', <?= $i ?>, '<?= $file ?>')">
                                 <img src="assets/uploads/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
                                 <span><?= $file ?></span>
                             </div>
@@ -394,8 +446,9 @@ $numTests = $editing ? count($assessment['tests']) : 1;
                             foreach ($audioFiles as $file): 
                                 $filePath = strpos($file, 'sounds/') === 0 ? 'assets/' . $file : 'assets/uploads/' . $file;
                                 $fileName = basename($file);
+                                $isSelected = ($test['left_sound'] === $filePath);
                             ?>
-                            <div class="file-option" onclick="selectFile('audio', 'left', <?= $i ?>, '<?= $file ?>')">
+                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('audio', 'left', <?= $i ?>, '<?= $file ?>')">
                                 <span>🎵 <?= $fileName ?></span>
                                 <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); playAudio('<?= $filePath ?>')">▶️</button>
                             </div>
@@ -407,11 +460,13 @@ $numTests = $editing ? count($assessment['tests']) : 1;
                         <input type="hidden" id="audio_center_<?= $i ?>" name="center_sound[]" value="<?= htmlspecialchars($test['center_sound']) ?>">
                         <div class="file-selector" id="audio_center_selector_<?= $i ?>">
                             <?php foreach ($audioFiles as $file): 
+                                $filePath = strpos($file, 'sounds/') === 0 ? 'assets/' . $file : 'assets/uploads/' . $file;
                                 $fileName = basename($file);
+                                $isSelected = ($test['center_sound'] === $filePath);
                             ?>
-                            <div class="file-option" onclick="selectFile('audio', 'center', <?= $i ?>, '<?= $file ?>')">
+                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('audio', 'center', <?= $i ?>, '<?= $file ?>')">
                                 <span>🎵 <?= $fileName ?></span>
-                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); playAudio('<?= strpos($file, 'sounds/') === 0 ? 'assets/' . $file : 'assets/uploads/' . $file ?>')">▶️</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); playAudio('<?= $filePath ?>')">▶️</button>
                             </div>
                             <?php endforeach; ?>
                         </div>
@@ -421,11 +476,13 @@ $numTests = $editing ? count($assessment['tests']) : 1;
                         <input type="hidden" id="audio_right_<?= $i ?>" name="right_sound[]" value="<?= htmlspecialchars($test['right_sound']) ?>">
                         <div class="file-selector" id="audio_right_selector_<?= $i ?>">
                             <?php foreach ($audioFiles as $file): 
+                                $filePath = strpos($file, 'sounds/') === 0 ? 'assets/' . $file : 'assets/uploads/' . $file;
                                 $fileName = basename($file);
+                                $isSelected = ($test['right_sound'] === $filePath);
                             ?>
-                            <div class="file-option" onclick="selectFile('audio', 'right', <?= $i ?>, '<?= $file ?>')">
+                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('audio', 'right', <?= $i ?>, '<?= $file ?>')">
                                 <span>🎵 <?= $fileName ?></span>
-                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); playAudio('<?= strpos($file, 'sounds/') === 0 ? 'assets/' . $file : 'assets/uploads/' . $file ?>')">▶️</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); playAudio('<?= $filePath ?>')">▶️</button>
                             </div>
                             <?php endforeach; ?>
                         </div>
@@ -471,8 +528,18 @@ $numTests = $editing ? count($assessment['tests']) : 1;
                                     }
                                 }
                             }
-                            foreach ($feedbackImageFiles as $file): ?>
-                            <div class="file-option" onclick="selectFile('feedback_image', 'correct', <?= $i ?>, '<?= $file ?>')">
+                            
+                            // Add "None/Clear" option
+                            $isNoneSelected = empty($test['correct_image'] ?? '');
+                            ?>
+                            <div class="file-option<?= $isNoneSelected ? ' selected' : '' ?>" onclick="unselectFeedbackFile('feedback_image', 'correct', <?= $i ?>)">
+                                <span style="color: #6c757d; font-style: italic;">❌ None / Clear Selection</span>
+                            </div>
+                            <?php
+                            foreach ($feedbackImageFiles as $file): 
+                                $isSelected = ($test['correct_image'] ?? '') === 'assets/uploads/feedback/' . $file;
+                            ?>
+                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('feedback_image', 'correct', <?= $i ?>, '<?= $file ?>')">
                                 <img src="assets/uploads/feedback/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
                                 <span><?= $file ?></span>
                             </div>
@@ -483,8 +550,17 @@ $numTests = $editing ? count($assessment['tests']) : 1;
                         <label>Incorrect Image</label>
                         <input type="hidden" id="feedback_image_incorrect_<?= $i ?>" name="incorrect_image[]" value="<?= htmlspecialchars($test['incorrect_image'] ?? '') ?>">
                         <div class="file-selector" id="feedback_image_incorrect_selector_<?= $i ?>">
-                            <?php foreach ($feedbackImageFiles as $file): ?>
-                            <div class="file-option" onclick="selectFile('feedback_image', 'incorrect', <?= $i ?>, '<?= $file ?>')">
+                            <?php
+                            // Add "None/Clear" option
+                            $isNoneSelected = empty($test['incorrect_image'] ?? '');
+                            ?>
+                            <div class="file-option<?= $isNoneSelected ? ' selected' : '' ?>" onclick="unselectFeedbackFile('feedback_image', 'incorrect', <?= $i ?>)">
+                                <span style="color: #6c757d; font-style: italic;">❌ None / Clear Selection</span>
+                            </div>
+                            <?php foreach ($feedbackImageFiles as $file): 
+                                $isSelected = ($test['incorrect_image'] ?? '') === 'assets/uploads/feedback/' . $file;
+                            ?>
+                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('feedback_image', 'incorrect', <?= $i ?>, '<?= $file ?>')">
                                 <img src="assets/uploads/feedback/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
                                 <span><?= $file ?></span>
                             </div>
@@ -497,7 +573,7 @@ $numTests = $editing ? count($assessment['tests']) : 1;
         </div>
         <?php endfor; ?>
         
-        <button type="submit" class="btn btn-success">Save Assessment</button>
+        <button type="submit" class="btn btn-success" onclick="return validateForm()">Save Assessment</button>
     </form>
 </div>
 <script>updateTests();</script>

@@ -205,15 +205,26 @@ if (!$userInfo) {
             border-radius: 8px;
             overflow: hidden;
             gap: 1px;
-            aspect-ratio: 15/1; /* Maintain aspect ratio for the grid */
+            min-height: 40px; /* Minimum height for colored squares */
+            /* Removed fixed aspect-ratio to allow dynamic sizing */
         }
         
         .score-indicator {
             position: relative;
             width: 100%;
-            padding-bottom: 100%; /* Makes the height equal to the width */
+            min-height: 38px; /* Minimum height for colored squares */
             background-color: rgba(52, 152, 219, 0.1); /* Light blue for empty state */
             transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Removed padding-bottom to allow dynamic height */
+        }
+        
+        /* Ensure square aspect ratio for colored indicators without images */
+        .score-indicator.square {
+            aspect-ratio: 1;
+            height: auto;
         }
         
         .score-indicator.correct {
@@ -798,16 +809,95 @@ if (!$userInfo) {
                 const scoreBar = document.getElementById('scoreBar');
                 scoreBar.innerHTML = ''; // Clear existing indicators
                 
+                // Check if feedback images are available
+                const hasFeedbackImages = currentTest && 
+                                        currentTest.feedback_images && 
+                                        (currentTest.feedback_images.correct || currentTest.feedback_images.incorrect);
+                
+                // Set initial height based on whether we have feedback images
+                if (!hasFeedbackImages) {
+                    // For square indicators, calculate width of one grid cell to make it square
+                    requestAnimationFrame(() => {
+                        const scoreBarWidth = scoreBar.offsetWidth;
+                        const indicatorWidth = Math.floor((scoreBarWidth - (15 * 1)) / 15); // 15 indicators with 1px gaps
+                        const squareHeight = Math.max(38, indicatorWidth); // Minimum 38px or square dimension
+                        
+                        scoreBar.style.height = (squareHeight + 2) + 'px'; // +2 for border
+                        
+                        // Apply height to all indicators
+                        const indicators = scoreBar.querySelectorAll('.score-indicator');
+                        indicators.forEach(indicator => {
+                            indicator.style.height = squareHeight + 'px';
+                            indicator.style.minHeight = squareHeight + 'px';
+                        });
+                    });
+                }
+                
                 for (let i = 0; i < total; i++) {
                     const indicator = document.createElement('div');
                     indicator.className = 'score-indicator';
                     
                     if (i < responses.length) {
-                        indicator.classList.add(responses[i] ? 'correct' : 'incorrect');
+                        const isCorrect = responses[i];
+                        
+                        if (hasFeedbackImages) {
+                            // Use feedback images when available
+                            const imageUrl = isCorrect ? currentTest.feedback_images.correct : currentTest.feedback_images.incorrect;
+                            
+                            if (imageUrl) {
+                                // Create image element
+                                const img = document.createElement('img');
+                                img.src = imageUrl;
+                                img.alt = isCorrect ? 'Correct' : 'Incorrect';
+                                img.style.width = '100%';
+                                img.style.height = 'auto';
+                                img.style.maxHeight = '80px'; // Reasonable max height
+                                img.style.objectFit = 'contain'; // Show full image without cropping
+                                img.style.borderRadius = '3px';
+                                
+                                // When image loads, adjust the score bar height
+                                img.onload = function() {
+                                    adjustScoreBarHeight();
+                                };
+                                
+                                indicator.appendChild(img);
+                            } else {
+                                // Fallback to colored square if image URL is empty
+                                indicator.classList.add(isCorrect ? 'correct' : 'incorrect', 'square');
+                            }
+                        } else {
+                            // Use colored squares when no feedback images are defined
+                            indicator.classList.add(isCorrect ? 'correct' : 'incorrect', 'square');
+                        }
                     }
                     
                     scoreBar.appendChild(indicator);
                 }
+            }
+            
+            // Adjust score bar height to accommodate images
+            function adjustScoreBarHeight() {
+                const scoreBar = document.getElementById('scoreBar');
+                const indicators = scoreBar.querySelectorAll('.score-indicator');
+                let maxHeight = 38; // Minimum height for colored squares
+                
+                // Find the tallest indicator with an image
+                indicators.forEach(indicator => {
+                    const img = indicator.querySelector('img');
+                    if (img && img.complete) {
+                        const indicatorHeight = img.offsetHeight;
+                        maxHeight = Math.max(maxHeight, indicatorHeight);
+                    }
+                });
+                
+                // Apply the max height to all indicators
+                indicators.forEach(indicator => {
+                    indicator.style.height = maxHeight + 'px';
+                    indicator.style.minHeight = maxHeight + 'px';
+                });
+                
+                // Update the score bar height
+                scoreBar.style.height = (maxHeight + 2) + 'px'; // +2 for border
             }
             
             // Calculate score for a test

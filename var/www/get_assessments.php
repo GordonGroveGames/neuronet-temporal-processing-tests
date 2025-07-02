@@ -49,6 +49,10 @@ try {
                     'center' => $test['center_sound'],
                     'right' => $test['right_sound']
                 ],
+                'feedback_images' => [
+                    'correct' => $test['correct_image'] ?? '',
+                    'incorrect' => $test['incorrect_image'] ?? ''
+                ],
                 'zones' => ['Left', 'Center', 'Right']
             ];
             
