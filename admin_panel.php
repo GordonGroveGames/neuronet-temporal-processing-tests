@@ -313,7 +313,7 @@ $canManageAssessments = can_manage_assessments();
             <div id="userResultsTable">
                 <?php
                 // Load test results from database
-                $dbFile = dirname(__DIR__) . '/data/test_results.db';
+                $dbFile = __DIR__ . '/var/data/test_results.db';
                 $userResultsData = [];
                 
                 if (file_exists($dbFile)) {

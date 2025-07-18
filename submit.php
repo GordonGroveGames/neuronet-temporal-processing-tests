@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 header('Content-Type: application/json');
 
 // Define the base directory
-$baseDir = dirname(dirname(__DIR__));
+$baseDir = __DIR__;
 
 // Include the actual submit handler from the private directory
 require_once $baseDir . '/var/private/includes/submit.php';

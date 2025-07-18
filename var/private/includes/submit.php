@@ -5,7 +5,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Set custom error log file
-$logFile = __DIR__ . '/../../logs/php_errors.log';
+$logFile = __DIR__ . '/../logs/php_errors.log';
 if (!file_exists(dirname($logFile))) {
     mkdir(dirname($logFile), 0777, true);
 }
@@ -194,7 +194,7 @@ try {
     }
     
     // Define database path and ensure directory exists
-    $dbDir = __DIR__ . '/../../data';
+    $dbDir = __DIR__ . '/../data';
     $dbPath = $dbDir . '/test_results.db';
     
     // Debug output

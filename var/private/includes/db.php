@@ -3,7 +3,7 @@ function getDbConnection() {
     static $pdo = null;
     
     if ($pdo === null) {
-        $dbDir = __DIR__ . '/../../data';
+        $dbDir = __DIR__ . '/../data';
         $dbPath = $dbDir . '/test_results.db';
         
         // Ensure the data directory exists
