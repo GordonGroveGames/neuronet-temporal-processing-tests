@@ -55,4 +55,7 @@ Thumbs.db
 
 # User data files (keep structure but not content)
 var/www/assets/users.json
-var/www/assets/assessments.json
+var/www/assets/assessments.json*.ssh
+*.ppk
+*.pem
+*.key
