@@ -1142,12 +1142,20 @@ if (!$userInfo) {
                 // Save results to the server
                 const saveStatus = document.getElementById('saveStatus');
                 saveStatus.textContent = 'Saving results...';
-                
+
                 try {
                     const result = await saveResults();
                     if (result && result.success) {
                         saveStatus.textContent = 'Results saved successfully!';
                         saveStatus.style.color = 'green';
+
+                        // Mark assessment(s) as completed for today
+                        const params = new URLSearchParams(window.location.search);
+                        const assessmentIds = (params.get('assessments') || '').split(',').filter(Boolean);
+                        const completed = JSON.parse(sessionStorage.getItem('completedAssessments') || '{}');
+                        const today = new Date().toISOString().slice(0, 10);
+                        assessmentIds.forEach(function(id) { completed[id] = today; });
+                        sessionStorage.setItem('completedAssessments', JSON.stringify(completed));
                     } else {
                         saveStatus.textContent = 'Error saving results. Please try again.';
                         saveStatus.style.color = 'red';

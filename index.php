@@ -40,7 +40,6 @@ if (count($assessments) === 1) {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             padding: 2rem 1rem;
         }
         .page-title {
@@ -56,10 +55,10 @@ if (count($assessments) === 1) {
         }
         .assessment-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.25rem;
             width: 100%;
-            max-width: 900px;
+            max-width: 1100px;
         }
         .assessment-card {
             border: 2px solid var(--border-light);
@@ -69,50 +68,34 @@ if (count($assessments) === 1) {
             cursor: pointer;
             transition: all var(--transition);
             overflow: hidden;
-            position: relative;
             user-select: none;
             -webkit-user-select: none;
+            text-decoration: none;
+            display: block;
         }
         .assessment-card:hover {
             box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
-        }
-        .assessment-card.selected {
+            transform: translateY(-3px);
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--primary-light), var(--shadow-md);
         }
-        .assessment-card.selected .card-check {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
+        .assessment-card.completed {
+            border-color: var(--success);
         }
-        .card-check {
-            position: absolute;
-            top: 0.75rem;
-            right: 0.75rem;
-            width: 28px;
-            height: 28px;
-            border: 2px solid var(--border-default);
-            border-radius: var(--radius-sm);
-            background: var(--surface-0);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            color: transparent;
-            transition: all var(--transition);
-            z-index: 2;
+        .assessment-card.completed:hover {
+            border-color: var(--success);
         }
         .card-thumbnails {
             display: flex;
             align-items: stretch;
-            height: 140px;
+            aspect-ratio: 3 / 1;
             background: var(--surface-1);
         }
         .card-thumbnails img {
             flex: 1;
-            object-fit: cover;
+            object-fit: contain;
             min-width: 0;
+            padding: 8px;
+            background: var(--surface-1);
         }
         .card-thumbnails .thumb-placeholder {
             flex: 1;
@@ -124,44 +107,30 @@ if (count($assessments) === 1) {
             font-weight: 600;
             font-size: 1.5rem;
         }
-        .card-body-label {
+        .card-footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
             padding: 0.75rem 1rem;
-            text-align: center;
+            border-top: 1px solid var(--border-light);
+        }
+        .card-assessment-name {
             font-weight: 600;
             font-size: 0.95rem;
             color: var(--text-primary);
         }
-        .start-section {
-            margin-top: 2rem;
-            text-align: center;
-        }
-        .btn-start {
-            background: var(--primary);
+        .card-check-done {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--success);
             color: #fff;
-            border: 1px solid var(--primary-dark);
-            border-radius: var(--radius-sm);
-            padding: 0.75rem 2.5rem;
-            font-weight: 600;
-            font-size: 1.1rem;
-            box-shadow: inset 0 1px rgba(255,255,255,0.15), 0 2px 6px rgba(79,70,229,0.2);
-            transition: all var(--transition);
-            cursor: pointer;
-        }
-        .btn-start:hover:not(:disabled) {
-            background: var(--primary-dark);
-            color: #fff;
-            box-shadow: inset 0 1px rgba(255,255,255,0.1), 0 4px 12px rgba(79,70,229,0.3);
-            transform: translateY(-1px);
-        }
-        .btn-start:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .selection-count {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            flex-shrink: 0;
         }
         .empty-state {
             text-align: center;
@@ -173,13 +142,14 @@ if (count($assessments) === 1) {
             color: var(--text-muted);
             margin-bottom: 1rem;
         }
+        @media (max-width: 420px) {
+            .assessment-grid {
+                grid-template-columns: 1fr;
+            }
+        }
         @media (pointer: coarse) {
             .assessment-card {
                 min-height: 44px;
-            }
-            .btn-start {
-                min-height: 54px;
-                padding: 0.85rem 3rem;
             }
         }
     </style>
@@ -201,8 +171,8 @@ if (count($assessments) === 1) {
             <p>Please contact your administrator to set up assessments.</p>
         </div>
     <?php else: ?>
-        <div class="page-title">Select Assessments</div>
-        <div class="page-subtitle">Choose which assessments to take, then press Start.</div>
+        <div class="page-title">Assessments</div>
+        <div class="page-subtitle">Tap an assessment to begin.</div>
 
         <div class="assessment-grid">
             <?php foreach ($assessments as $id => $assessment):
@@ -211,69 +181,51 @@ if (count($assessments) === 1) {
                 $centerImg = $test['center_image'] ?? '';
                 $rightImg = $test['right_image'] ?? '';
             ?>
-            <div class="assessment-card" data-id="<?= htmlspecialchars($id) ?>" onclick="toggleCard(this)">
-                <div class="card-check"><i class="fa-solid fa-check"></i></div>
+            <a class="assessment-card" data-id="<?= htmlspecialchars($id) ?>" href="test.php?assessments=<?= urlencode($id) ?>">
                 <div class="card-thumbnails">
                     <?php if ($leftImg): ?>
-                        <img src="<?= htmlspecialchars($leftImg) ?>" alt="Left">
+                        <img src="<?= htmlspecialchars($leftImg) ?>" alt="Left" draggable="false">
                     <?php else: ?>
                         <div class="thumb-placeholder">L</div>
                     <?php endif; ?>
                     <?php if ($centerImg): ?>
-                        <img src="<?= htmlspecialchars($centerImg) ?>" alt="Center">
+                        <img src="<?= htmlspecialchars($centerImg) ?>" alt="Center" draggable="false">
                     <?php else: ?>
                         <div class="thumb-placeholder">C</div>
                     <?php endif; ?>
                     <?php if ($rightImg): ?>
-                        <img src="<?= htmlspecialchars($rightImg) ?>" alt="Right">
+                        <img src="<?= htmlspecialchars($rightImg) ?>" alt="Right" draggable="false">
                     <?php else: ?>
                         <div class="thumb-placeholder">R</div>
                     <?php endif; ?>
                 </div>
-                <div class="card-body-label"><?= htmlspecialchars($assessment['name']) ?></div>
-            </div>
+                <div class="card-footer-row">
+                    <span class="card-assessment-name"><?= htmlspecialchars($assessment['name']) ?></span>
+                </div>
+            </a>
             <?php endforeach; ?>
-        </div>
-
-        <div class="start-section">
-            <button class="btn-start" id="startBtn" disabled onclick="startSelected()">
-                <i class="fa-solid fa-play me-2"></i>Start
-            </button>
-            <div class="selection-count" id="selectionCount">No assessments selected</div>
         </div>
     <?php endif; ?>
 </div>
 
 <script>
-    function toggleCard(card) {
-        card.classList.toggle('selected');
-        updateStartButton();
-    }
+    // Mark completed assessments with green check
+    document.addEventListener('DOMContentLoaded', function() {
+        const completed = JSON.parse(sessionStorage.getItem('completedAssessments') || '{}');
+        const today = new Date().toISOString().slice(0, 10);
 
-    function updateStartButton() {
-        const selected = document.querySelectorAll('.assessment-card.selected');
-        const btn = document.getElementById('startBtn');
-        const count = document.getElementById('selectionCount');
-        const n = selected.length;
-
-        btn.disabled = n === 0;
-
-        if (n === 0) {
-            count.textContent = 'No assessments selected';
-        } else if (n === 1) {
-            count.textContent = '1 assessment selected';
-        } else {
-            count.textContent = n + ' assessments selected';
-        }
-    }
-
-    function startSelected() {
-        const selected = document.querySelectorAll('.assessment-card.selected');
-        if (selected.length === 0) return;
-
-        const ids = Array.from(selected).map(c => c.dataset.id);
-        window.location.href = 'test.php?assessments=' + encodeURIComponent(ids.join(','));
-    }
+        document.querySelectorAll('.assessment-card').forEach(function(card) {
+            const id = card.dataset.id;
+            if (completed[id] === today) {
+                card.classList.add('completed');
+                const footer = card.querySelector('.card-footer-row');
+                const check = document.createElement('div');
+                check.className = 'card-check-done';
+                check.innerHTML = '<i class="fa-solid fa-check"></i>';
+                footer.appendChild(check);
+            }
+        });
+    });
 </script>
 </body>
 </html>
