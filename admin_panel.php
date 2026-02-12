@@ -18,32 +18,11 @@ $canManageAssessments = can_manage_assessments();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NNTPT Admin</title>
-    <link rel="stylesheet" href="assets/css/touch-fixes.css">
+    <title>Admin — The Fluency Factor</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
-    <style>
-        @media (pointer: coarse) {
-            .btn-sm {
-                padding: 0.4rem 0.8rem;
-                font-size: 0.9rem;
-                min-height: 44px;
-            }
-            td a {
-                display: inline-block;
-                padding: 0.25rem;
-                min-height: 44px;
-                line-height: 2;
-            }
-            .modal .form-control,
-            .modal .form-select {
-                min-height: 44px;
-                font-size: 1rem;
-            }
-            .column-filter {
-                min-height: 44px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/touch-fixes.css">
+    <link rel="stylesheet" href="assets/css/admin-styles.css">
     <script>
         function playAudio(filePath) {
             const existingAudio = document.getElementById('preview_audio');
@@ -91,28 +70,27 @@ $canManageAssessments = can_manage_assessments();
         }
     </script>
 </head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-light bg-white mb-4">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="#">NNTPT Admin</a>
-        <div class="d-flex">
-            <a href="admin_logout.php" class="btn btn-outline-danger">Logout</a>
-        </div>
+<body>
+<nav class="navbar-admin d-flex justify-content-between align-items-center">
+    <a class="navbar-brand" href="#">The Fluency Factor</a>
+    <div class="d-flex align-items-center gap-3">
+        <a href="login.php" class="nav-link-light"><i class="fa-solid fa-arrow-right-from-bracket fa-flip-horizontal me-1"></i> Test Login</a>
+        <a href="admin_logout.php" class="btn-logout"><i class="fa-solid fa-right-from-bracket me-1"></i> Logout</a>
     </div>
 </nav>
 
 <!-- Tabs Navigation -->
-<div class="container">
-    <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+<div class="container mt-4">
+    <ul class="nav nav-tabs-modern mb-4" id="adminTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="assessments-tab" data-bs-toggle="tab" data-bs-target="#assessments" type="button" role="tab">Assessments</button>
+            <button class="nav-link active" id="assessments-tab" data-bs-toggle="tab" data-bs-target="#assessments" type="button" role="tab"><i class="fa-solid fa-clipboard-list me-1"></i> Assessments</button>
         </li>
         <?php if ($canManageUsers): ?>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">User Management</button>
+            <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab"><i class="fa-solid fa-users me-1"></i> Users</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab">Assessment Results</button>
+            <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button" role="tab"><i class="fa-solid fa-chart-bar me-1"></i> Results</button>
         </li>
         <?php endif; ?>
     </ul>
@@ -123,7 +101,7 @@ $canManageAssessments = can_manage_assessments();
         <div class="tab-pane fade show active" id="assessments" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Assessments</h2>
-                <a href="admin_assessment.php" class="btn btn-primary">+ Create New</a>
+                <a href="admin_assessment.php" class="btn btn-modern-primary"><i class="fa-solid fa-plus me-1"></i> Create New</a>
             </div>
             <?php
             // List assessments from JSON
@@ -159,52 +137,55 @@ $canManageAssessments = can_manage_assessments();
                     $centerSound = $test['center_sound'] ?? '';
                     $rightSound = $test['right_sound'] ?? '';
                 ?>
-                <div class="card mb-3 bg-white">
-                    <div class="card-header d-flex justify-content-between align-items-center" style="background-color:#f1f3f5;">
-                        <div>
+                <div class="card-modern mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
                             <strong style="font-size:1.05rem;"><?= htmlspecialchars($assessment['name']) ?></strong>
-                            <span class="badge <?= $createdBy === 'admin' ? 'bg-danger' : 'bg-info' ?> ms-2">
+                            <?php
+                                $creatorBadge = $createdBy === 'admin' ? 'badge-admin' : 'badge-creator';
+                            ?>
+                            <span class="badge-pill <?= $creatorBadge ?>">
                                 <?= htmlspecialchars($createdBy) ?>
                             </span>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <?php if ($canEdit): ?>
-                                <a href="admin_assessment.php?id=<?= urlencode($id) ?>" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                <a href="admin_assessment.php?id=<?= urlencode($id) ?>" class="btn-ghost"><i class="fa-solid fa-pen-to-square me-1"></i>Edit</a>
                             <?php else: ?>
-                                <a href="admin_assessment.php?id=<?= urlencode($id) ?>" class="btn btn-sm btn-outline-info">View</a>
+                                <a href="admin_assessment.php?id=<?= urlencode($id) ?>" class="btn-ghost"><i class="fa-solid fa-eye me-1"></i>View</a>
                             <?php endif; ?>
                             <?php if ($canDelete): ?>
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAssessment('<?= htmlspecialchars($id) ?>', '<?= htmlspecialchars($assessment['name']) ?>')">Delete</button>
+                                <button type="button" class="btn-ghost-danger" onclick="deleteAssessment('<?= htmlspecialchars($id) ?>', '<?= htmlspecialchars($assessment['name']) ?>')"><i class="fa-solid fa-trash-can me-1"></i>Delete</button>
                             <?php endif; ?>
                         </div>
                     </div>
-                    <div class="card-body" style="padding:12px;">
+                    <div class="card-body">
                         <div style="display:flex;gap:12px;">
                             <?php
                             $channels = [
-                                ['label' => 'Left', 'color' => '#0d6efd', 'img' => $leftImg, 'sound' => $leftSound],
-                                ['label' => 'Center', 'color' => '#6f42c1', 'img' => $centerImg, 'sound' => $centerSound],
-                                ['label' => 'Right', 'color' => '#fd7e14', 'img' => $rightImg, 'sound' => $rightSound],
+                                ['label' => 'Left', 'class' => 'channel-left', 'img' => $leftImg, 'sound' => $leftSound],
+                                ['label' => 'Center', 'class' => 'channel-center', 'img' => $centerImg, 'sound' => $centerSound],
+                                ['label' => 'Right', 'class' => 'channel-right', 'img' => $rightImg, 'sound' => $rightSound],
                             ];
                             foreach ($channels as $ch):
                                 $imgName = $ch['img'] ? pathinfo($ch['img'], PATHINFO_FILENAME) : '';
                                 $audioName = $ch['sound'] ? pathinfo($ch['sound'], PATHINFO_FILENAME) : '';
                             ?>
-                            <div style="flex:1;border:2px solid <?= $ch['color'] ?>;border-radius:8px;padding:10px;background:white;">
-                                <div style="font-weight:600;color:<?= $ch['color'] ?>;margin-bottom:8px;text-align:center;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.5px;"><?= $ch['label'] ?></div>
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                                    <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                            <div class="channel-card <?= $ch['class'] ?>">
+                                <div class="channel-label"><?= $ch['label'] ?></div>
+                                <div class="channel-content">
+                                    <div class="channel-media">
                                         <?php if ($ch['img']): ?>
-                                            <img src="<?= htmlspecialchars($ch['img']) ?>" style="width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid #dee2e6;flex-shrink:0;" alt="<?= htmlspecialchars($imgName) ?>">
+                                            <img src="<?= htmlspecialchars($ch['img']) ?>" class="channel-thumb" alt="<?= htmlspecialchars($imgName) ?>">
                                         <?php else: ?>
-                                            <div style="width:48px;height:48px;border-radius:4px;background:#e9ecef;display:flex;align-items:center;justify-content:center;color:#6c757d;font-weight:bold;flex-shrink:0;"><?= $ch['label'][0] ?></div>
+                                            <div class="channel-thumb-placeholder"><?= $ch['label'][0] ?></div>
                                         <?php endif; ?>
-                                        <div style="font-weight:600;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;" title="<?= htmlspecialchars($imgName) ?>"><?= htmlspecialchars($imgName ?: '—') ?></div>
+                                        <div class="channel-img-name" title="<?= htmlspecialchars($imgName) ?>"><?= htmlspecialchars($imgName ?: '—') ?></div>
                                     </div>
-                                    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-                                        <span style="font-size:0.8rem;color:#6c757d;white-space:nowrap;" title="<?= htmlspecialchars($audioName) ?>"><?= htmlspecialchars($audioName ?: '—') ?></span>
+                                    <div class="channel-audio">
+                                        <span class="channel-audio-name" title="<?= htmlspecialchars($audioName) ?>"><?= htmlspecialchars($audioName ?: '—') ?></span>
                                         <?php if ($ch['sound']): ?>
-                                            <button type="button" onclick="playAudio('<?= htmlspecialchars($ch['sound']) ?>')" style="background:none;border:1px solid #dee2e6;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.85rem;line-height:1;" title="Play <?= htmlspecialchars($audioName) ?>">▶️</button>
+                                            <button type="button" class="btn-play" onclick="playAudio('<?= htmlspecialchars($ch['sound']) ?>')" title="Play <?= htmlspecialchars($audioName) ?>"><i class="fa-solid fa-play"></i></button>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -222,7 +203,7 @@ $canManageAssessments = can_manage_assessments();
         <div class="tab-pane fade" id="users" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>User Management</h2>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">Create New User</button>
+                <button type="button" class="btn btn-modern-primary" data-bs-toggle="modal" data-bs-target="#createUserModal"><i class="fa-solid fa-user-plus me-1"></i> Create New User</button>
             </div>
             
             <?php
@@ -249,7 +230,7 @@ $canManageAssessments = can_manage_assessments();
             }
             ?>
             
-            <table class="table table-bordered bg-white">
+            <table class="table-modern">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -301,26 +282,26 @@ $canManageAssessments = can_manage_assessments();
                             <td><?= htmlspecialchars($user['name'] ?? $user['username'] ?? 'No name') ?></td>
                             <td><?= htmlspecialchars($email) ?></td>
                             <td>
-                                <?php 
-                                $badgeClass = 'bg-secondary';
+                                <?php
+                                $badgeClass = 'badge-system';
                                 $roleDisplay = ucwords(str_replace('_', ' ', $user['role']));
                                 switch($user['role']) {
                                     case 'admin':
-                                        $badgeClass = 'bg-danger';
+                                        $badgeClass = 'badge-admin';
                                         $roleDisplay = 'Master Admin';
                                         break;
                                     case 'site_admin':
-                                        $badgeClass = 'bg-warning';
+                                        $badgeClass = 'badge-site-admin';
                                         break;
                                     case 'test_creator':
-                                        $badgeClass = 'bg-info';
+                                        $badgeClass = 'badge-creator';
                                         break;
                                     case 'test_taker':
-                                        $badgeClass = 'bg-success';
+                                        $badgeClass = 'badge-taker';
                                         break;
                                 }
                                 ?>
-                                <span class="badge <?= $badgeClass ?>">
+                                <span class="badge-pill <?= $badgeClass ?>">
                                     <?= htmlspecialchars($roleDisplay) ?>
                                 </span>
                             </td>
@@ -329,14 +310,14 @@ $canManageAssessments = can_manage_assessments();
                                 // Show created_by only for test_taker role
                                 if ($user['role'] === 'test_taker'): 
                                     if ($createdBy === 'System' || empty($createdBy)): ?>
-                                        <span class="badge bg-secondary">System</span>
+                                        <span class="badge-pill badge-system">System</span>
                                     <?php else:
                                         // Check if creator is admin - treat as System
                                         $isAdminCreator = isset($users[$createdBy]) && $users[$createdBy]['role'] === 'admin';
                                         if ($isAdminCreator): ?>
-                                            <span class="badge bg-secondary">System</span>
+                                            <span class="badge-pill badge-system">System</span>
                                         <?php else: ?>
-                                            <span class="badge bg-primary"><?= htmlspecialchars($createdBy) ?></span>
+                                            <span class="badge-pill badge-creator"><?= htmlspecialchars($createdBy) ?></span>
                                         <?php endif;
                                     endif;
                                 else: ?>
@@ -346,11 +327,11 @@ $canManageAssessments = can_manage_assessments();
                             <td><?= htmlspecialchars($user['created_at'] ?? 'Unknown') ?></td>
                             <td>
                                 <?php if ($canEditUser): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="editUser('<?= htmlspecialchars($email) ?>', '<?= htmlspecialchars($user['name'] ?? $user['username'] ?? '') ?>', '<?= htmlspecialchars($user['role']) ?>', '<?= htmlspecialchars($user['created_by'] ?? '') ?>')">Edit</button>
+                                    <button type="button" class="btn-ghost me-1" onclick="editUser('<?= htmlspecialchars($email) ?>', '<?= htmlspecialchars($user['name'] ?? $user['username'] ?? '') ?>', '<?= htmlspecialchars($user['role']) ?>', '<?= htmlspecialchars($user['created_by'] ?? '') ?>')"><i class="fa-solid fa-pen-to-square me-1"></i>Edit</button>
                                 <?php endif; ?>
-                                
+
                                 <?php if ($canEditUser && $email !== $_SESSION['admin_user'] && $user['role'] !== 'admin'): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteUser('<?= htmlspecialchars($email) ?>')">Delete</button>
+                                    <button type="button" class="btn-ghost-danger" onclick="deleteUser('<?= htmlspecialchars($email) ?>')"><i class="fa-solid fa-trash-can me-1"></i>Delete</button>
                                 <?php endif; ?>
                                 
                                 <?php if ($email === $_SESSION['admin_user']): ?>
@@ -439,7 +420,7 @@ $canManageAssessments = can_manage_assessments();
                 }
                 ?>
                 
-                <table class="table table-bordered bg-white" id="resultsTable">
+                <table class="table-modern" id="resultsTable">
                     <thead>
                         <tr>
                             <th>
@@ -506,7 +487,7 @@ $canManageAssessments = can_manage_assessments();
             <div id="userDetailsTable" style="display: none;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 id="userDetailsTitle">Test Results for User</h4>
-                    <button type="button" class="btn btn-secondary" onclick="hideUserDetails()">Back to Summary</button>
+                    <button type="button" class="btn-ghost" onclick="hideUserDetails()"><i class="fa-solid fa-arrow-left me-1"></i> Back to Summary</button>
                 </div>
                 
                 <div id="userDetailsContent">
@@ -556,8 +537,8 @@ $canManageAssessments = can_manage_assessments();
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="createUser()">Create User</button>
+                <button type="button" class="btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-modern-primary" onclick="createUser()">Create User</button>
             </div>
         </div>
     </div>
@@ -608,8 +589,8 @@ $canManageAssessments = can_manage_assessments();
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="updateUser()">Update User</button>
+                <button type="button" class="btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-modern-primary" onclick="updateUser()">Update User</button>
             </div>
         </div>
     </div>
@@ -959,35 +940,37 @@ $canManageAssessments = can_manage_assessments();
             return file.replace(/\.[^.]+$/, '');
         }
 
-        function buildChannelCard(label, borderColor, imgSrc, imgName, audioSrc, audioName, trials, correct, accuracy, avgMs) {
+        function buildChannelCard(label, channelClass, imgSrc, imgName, audioSrc, audioName, trials, correct, accuracy, avgMs) {
             const thumbHtml = imgSrc
-                ? `<img src="${imgSrc}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid #dee2e6;flex-shrink:0;" alt="${escapeHtml(imgName)}">`
-                : `<div style="width:48px;height:48px;border-radius:4px;background:#e9ecef;display:flex;align-items:center;justify-content:center;color:#6c757d;font-weight:bold;flex-shrink:0;">${label.charAt(0)}</div>`;
+                ? `<img src="${imgSrc}" class="channel-thumb" alt="${escapeHtml(imgName)}">`
+                : `<div class="channel-thumb-placeholder">${label.charAt(0)}</div>`;
 
             const playBtn = audioSrc
-                ? `<button type="button" onclick="playAudio('${escapeHtml(audioSrc)}')" style="background:none;border:1px solid #dee2e6;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.85rem;line-height:1;" title="Play ${escapeHtml(audioName)}">▶️</button>`
+                ? `<button type="button" class="btn-play" onclick="playAudio('${escapeHtml(audioSrc)}')" title="Play ${escapeHtml(audioName)}"><i class="fa-solid fa-play"></i></button>`
                 : '';
 
+            const scoreClass = accuracy >= 80 ? 'score-high' : accuracy >= 50 ? 'score-medium' : 'score-low';
+
             return `
-                <div style="flex:1;border:2px solid ${borderColor};border-radius:8px;padding:10px;background:white;">
-                    <div style="font-weight:600;color:${borderColor};margin-bottom:8px;text-align:center;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.5px;">${label}</div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
-                        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                <div class="channel-card ${channelClass}">
+                    <div class="channel-label">${label}</div>
+                    <div class="channel-content">
+                        <div class="channel-media">
                             ${thumbHtml}
-                            <div style="font-weight:600;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;" title="${escapeHtml(imgName)}">${escapeHtml(imgName || '—')}</div>
+                            <div class="channel-img-name" title="${escapeHtml(imgName)}">${escapeHtml(imgName || '—')}</div>
                         </div>
-                        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-                            <span style="font-size:0.8rem;color:#6c757d;white-space:nowrap;" title="${escapeHtml(audioName)}">${escapeHtml(audioName || '—')}</span>
+                        <div class="channel-audio">
+                            <span class="channel-audio-name" title="${escapeHtml(audioName)}">${escapeHtml(audioName || '—')}</span>
                             ${playBtn}
                         </div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.8rem;">
-                        <div style="color:#6c757d;">Trials:</div>
-                        <div style="font-weight:600;text-align:right;">${trials}</div>
-                        <div style="color:#6c757d;">Accuracy:</div>
-                        <div style="font-weight:600;text-align:right;color:${accuracy >= 80 ? '#28a745' : accuracy >= 50 ? '#ffc107' : '#dc3545'}">${correct}/${trials} (${accuracy}%)</div>
-                        <div style="color:#6c757d;">Avg RT:</div>
-                        <div style="font-weight:600;text-align:right;">${formatNumber(avgMs)} ms</div>
+                    <div class="channel-stats">
+                        <div class="stat-label">Trials:</div>
+                        <div class="stat-value">${trials}</div>
+                        <div class="stat-label">Accuracy:</div>
+                        <div class="stat-value ${scoreClass}">${correct}/${trials} (${accuracy}%)</div>
+                        <div class="stat-label">Avg RT:</div>
+                        <div class="stat-value">${formatNumber(avgMs)} ms</div>
                     </div>
                 </div>`;
         }
@@ -1015,35 +998,37 @@ $canManageAssessments = can_manage_assessments();
             const centerAudioName = filenameFromPath(cfg.center_sound);
             const rightAudioName = filenameFromPath(cfg.right_sound);
 
+            const scoreClass = scorePercentage >= 80 ? 'score-high' : scorePercentage >= 50 ? 'score-medium' : 'score-low';
+
             html += `
-            <div class="card mb-3">
-                <div class="card-header d-flex justify-content-between align-items-center" style="background-color:#f1f3f5;">
+            <div class="card-modern mb-3">
+                <div class="result-card-header d-flex justify-content-between align-items-center">
                     <div>
                         <strong style="font-size:1.05rem;">${escapeHtml(result.testName)}</strong>
-                        <span class="text-muted ms-3" style="font-size:0.85rem;">${formatDate(result.testDate)}</span>
+                        <span style="color:var(--text-muted);margin-left:0.75rem;font-size:0.85rem;">${formatDate(result.testDate)}</span>
                     </div>
                     <div class="d-flex align-items-center gap-3">
-                        <span style="font-size:0.85rem;color:#6c757d;">Total Time: <strong>${formatNumber(result.testTimeMs || 0)} ms</strong></span>
-                        <span style="font-size:0.85rem;color:${scorePercentage >= 80 ? '#28a745' : scorePercentage >= 50 ? '#ffc107' : '#dc3545'};font-weight:600;">${correctTrials}/${totalTrials} (${scorePercentage}%)</span>
-                        ${isAdmin ? `<img src="assets/images/trash_icon.svg" alt="Delete" style="width:28px;height:28px;cursor:pointer;" onclick="deleteTestSession('${escapeHtml(result.sessionId)}', '${escapeHtml(result.testName)}', '${formatDate(result.testDate)}')" title="Delete this test session">` : ''}
+                        <span style="font-size:0.85rem;color:var(--text-secondary);">Total Time: <strong>${formatNumber(result.testTimeMs || 0)} ms</strong></span>
+                        <span style="font-size:0.85rem;font-weight:600;" class="${scoreClass}">${correctTrials}/${totalTrials} (${scorePercentage}%)</span>
+                        ${isAdmin ? `<button class="btn-ghost-danger" style="padding:0.2rem 0.5rem;" onclick="deleteTestSession('${escapeHtml(result.sessionId)}', '${escapeHtml(result.testName)}', '${formatDate(result.testDate)}')" title="Delete this test session"><i class="fa-solid fa-trash-can"></i></button>` : ''}
                     </div>
                 </div>
-                <div class="card-body" style="padding:12px;">
+                <div class="card-body">
                     <div style="display:flex;gap:12px;margin-bottom:12px;">
-                        ${buildChannelCard('Left', '#0d6efd', cfg.left_image, leftImgName, cfg.left_sound, leftAudioName, leftTrials, result.leftCorrect, leftAccuracy, result.leftAvgResponseTime || 0)}
-                        ${buildChannelCard('Center', '#6f42c1', cfg.center_image, centerImgName, cfg.center_sound, centerAudioName, centerTrials, result.centerCorrect, centerAccuracy, result.centerAvgResponseTime || 0)}
-                        ${buildChannelCard('Right', '#fd7e14', cfg.right_image, rightImgName, cfg.right_sound, rightAudioName, rightTrials, result.rightCorrect, rightAccuracy, result.rightAvgResponseTime || 0)}
+                        ${buildChannelCard('Left', 'channel-left', cfg.left_image, leftImgName, cfg.left_sound, leftAudioName, leftTrials, result.leftCorrect, leftAccuracy, result.leftAvgResponseTime || 0)}
+                        ${buildChannelCard('Center', 'channel-center', cfg.center_image, centerImgName, cfg.center_sound, centerAudioName, centerTrials, result.centerCorrect, centerAccuracy, result.centerAvgResponseTime || 0)}
+                        ${buildChannelCard('Right', 'channel-right', cfg.right_image, rightImgName, cfg.right_sound, rightAudioName, rightTrials, result.rightCorrect, rightAccuracy, result.rightAvgResponseTime || 0)}
                     </div>
-                    <div style="padding:8px 4px;background-color:#f8f9fa;border-radius:6px;">
+                    <div class="trial-results-bar">
                         <div class="d-flex align-items-center gap-3">
-                            <small class="text-muted" style="white-space:nowrap;">Trial Results:</small>
+                            <small style="white-space:nowrap;color:var(--text-muted);font-weight:500;">Trial Results:</small>
                             <div class="d-flex gap-1" style="flex-grow:1;flex-wrap:wrap;">
                                 ${result.trials ? result.trials.map((trial, trialIndex) => {
-                                    const bgColor = trial.correct ? '#28a745' : '#dc3545';
+                                    const bgColor = trial.correct ? 'var(--success)' : 'var(--danger)';
                                     const title = `Trial ${trialIndex + 1}: ${trial.userAnswer} (correct: ${trial.correctAnswer}) - ${trial.responseTime}ms`;
                                     const channelLetter = trial.correctAnswer.charAt(0).toUpperCase();
-                                    return `<div style="width:28px;height:28px;background-color:${bgColor};border-radius:3px;position:relative;flex-shrink:0;" title="${title}">
-                                        <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:14px;font-weight:bold;">${channelLetter}</span>
+                                    return `<div class="trial-dot" style="background-color:${bgColor};" title="${title}">
+                                        <span>${channelLetter}</span>
                                     </div>`;
                                 }).join('') : ''}
                             </div>
