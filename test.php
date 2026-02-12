@@ -13,9 +13,10 @@ if (!$userInfo) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NeuroNet Temporal Processing Test</title>
+    <title>Test — The Fluency Factor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/touch-fixes.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/admin-styles.css">
     <style>
         * {
             box-sizing: border-box;
@@ -24,16 +25,15 @@ if (!$userInfo) {
         }
         
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f0f2f5;
+            background-color: var(--surface-1);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #333;
+            color: var(--text-primary);
             line-height: 1.6;
         }
         
@@ -42,9 +42,9 @@ if (!$userInfo) {
             max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            background: white;
-            border-radius: 10px;
+            box-shadow: var(--shadow-md);
+            background: var(--surface-0);
+            border-radius: var(--radius-lg);
         }
         
         .screen {
@@ -59,34 +59,41 @@ if (!$userInfo) {
         }
         
         h1 {
-            color: #2c3e50;
+            color: var(--text-primary);
             margin-bottom: 1.5rem;
         }
-        
-        h2 {
-            color: #3498db;
-            margin: 1.5rem 0;
-        }
-        
+
         .btn {
-            background-color: #3498db;
-            color: white;
-            border: none;
+            background: var(--primary);
+            color: #fff;
+            border: 1px solid var(--primary-dark);
             padding: 12px 24px;
-            border-radius: 5px;
+            border-radius: var(--radius-sm);
             font-size: 16px;
+            font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all var(--transition);
             margin: 10px 5px;
+            box-shadow: inset 0 1px rgba(255,255,255,0.15), 0 1px 3px rgba(0,0,0,0.1);
         }
-        
+
         .btn:hover {
-            background-color: #2980b9;
+            background: var(--primary-dark);
+            box-shadow: inset 0 1px rgba(255,255,255,0.1), 0 4px 8px rgba(79,70,229,0.25);
+            transform: translateY(-1px);
         }
-        
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+        }
+
         .btn:disabled {
-            background-color: #95a5a6;
+            background: var(--text-muted);
+            border-color: var(--text-muted);
             cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
         }
         
         /* Test Header */
@@ -97,22 +104,23 @@ if (!$userInfo) {
         .progress-text {
             font-size: 1.1rem;
             margin-bottom: 0.5rem;
-            color: #7f8c8d;
+            color: var(--text-secondary);
         }
         
         .progress-container {
             width: 100%;
-            height: 10px;
-            background-color: #ecf0f1;
-            border-radius: 5px;
+            height: 8px;
+            background-color: var(--surface-2);
+            border-radius: 9999px;
             overflow: hidden;
         }
-        
+
         .progress-bar {
             height: 100%;
             width: 0%;
-            background-color: #3498db;
+            background: var(--primary-gradient);
             transition: width 0.3s ease;
+            border-radius: 9999px;
         }
         
         /* Test Area */
@@ -266,27 +274,163 @@ if (!$userInfo) {
         }
         
         /* Results Screen */
+        .results-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .results-header h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 0.25rem 0;
+        }
+        .results-header .results-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
         .test-result {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            background: var(--surface-0);
+            border-radius: var(--radius-lg);
+            padding: 0;
+            margin: 0 0 1rem 0;
+            box-shadow: var(--shadow-sm);
             text-align: left;
+            overflow: hidden;
+            transition: box-shadow var(--transition);
         }
-        
-        .test-result h4 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
+        .test-result:hover {
+            box-shadow: var(--shadow-md);
         }
-        
+        .test-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .test-result-header h4 {
+            color: var(--text-primary);
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .test-result-body {
+            padding: 1rem 1.25rem;
+        }
+        .result-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .result-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+        .result-stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .result-stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .result-score-bar {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+        }
+        .result-score-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: transform var(--transition);
+        }
+        .result-score-dot:hover {
+            transform: scale(1.15);
+        }
+        .result-score-dot.correct { background: var(--success); }
+        .result-score-dot.incorrect { background: var(--danger); }
+        .result-score-dot.empty { background: var(--surface-2); color: var(--text-muted); }
+
         .summary {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            background: var(--surface-0);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin: 1.5rem 0 0 0;
+            box-shadow: var(--shadow-sm);
+            border-top: 3px solid var(--primary);
+        }
+        .summary h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 1rem 0;
+        }
+        .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .summary-stat {
+            text-align: center;
+        }
+        .summary-stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .summary-stat-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+        .summary-actions {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+        }
+        .summary-actions .btn-outline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-default);
+            padding: 10px 24px;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition);
+            margin: 0;
+            box-shadow: none;
+        }
+        .summary-actions .btn-outline:hover {
+            background: var(--surface-1);
+            color: var(--text-primary);
+            border-color: var(--border-default);
+            transform: translateY(-1px);
+        }
+        #saveStatus {
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 500;
+            min-height: 1.5em;
         }
         
         /* Responsive Design */
@@ -1085,30 +1229,7 @@ if (!$userInfo) {
             // Show the final results
             async function showResults() {
                 showScreen('results');
-                
-                // Generate results HTML
-                let resultsHTML = '<h2>Test Results</h2>';
-                
-                testResultsData.forEach((test, index) => {
-                    resultsHTML += `
-                        <div class="test-result">
-                            <h4>Test ${index + 1}: ${test.name}</h4>
-                            <p>${test.description}</p>
-                            <p>Score: ${test.score.correct} / ${test.score.total} (${test.score.percentage}%)</p>
-                            <p>Average Response Time: ${test.score.avgResponseTime}ms</p>
-                            <div class="score-bar">
-                                ${Array(test.entries).fill().map((_, i) => {
-                                    const response = test.responses[i];
-                                    if (!response) return `<div class="score-indicator">${i+1}</div>`;
-                                    return `<div class="score-indicator ${response.isCorrect ? 'correct' : 'incorrect'}">
-                                        ${response.isCorrect ? '✓' : '✕'}
-                                    </div>`;
-                                }).join('')}
-                            </div>
-                        </div>
-                    `;
-                });
-                
+
                 // Calculate overall score
                 const totalCorrect = testResultsData.reduce((sum, test) => sum + test.score.correct, 0);
                 const totalTrials = testResultsData.reduce((sum, test) => sum + test.score.total, 0);
@@ -1116,18 +1237,72 @@ if (!$userInfo) {
                 const avgResponseTime = Math.round(
                     testResultsData.reduce((sum, test) => sum + test.score.avgResponseTime, 0) / testResultsData.length
                 );
-                
+
+                const scoreColorClass = overallPercentage >= 80 ? 'score-high' : overallPercentage >= 50 ? 'score-medium' : 'score-low';
+
+                // Generate results HTML
+                let resultsHTML = `<div class="results-header">
+                    <h2><i class="fa-solid fa-chart-column me-2"></i>Test Results</h2>
+                    <div class="results-subtitle">${testResultsData.length} assessment${testResultsData.length !== 1 ? 's' : ''} completed</div>
+                </div>`;
+
+                testResultsData.forEach((test, index) => {
+                    const pctClass = test.score.percentage >= 80 ? 'score-high' : test.score.percentage >= 50 ? 'score-medium' : 'score-low';
+                    resultsHTML += `
+                        <div class="test-result">
+                            <div class="test-result-header">
+                                <h4>${test.name}</h4>
+                                <span class="${pctClass}" style="font-weight:700;font-size:0.95rem;">${test.score.percentage}%</span>
+                            </div>
+                            <div class="test-result-body">
+                                <div class="result-stats">
+                                    <div class="result-stat">
+                                        <span class="result-stat-label">Score</span>
+                                        <span class="result-stat-value">${test.score.correct}<span style="color:var(--text-muted);font-weight:400;font-size:0.85rem;">/${test.score.total}</span></span>
+                                    </div>
+                                    <div class="result-stat">
+                                        <span class="result-stat-label">Avg Response</span>
+                                        <span class="result-stat-value">${test.score.avgResponseTime}<span style="color:var(--text-muted);font-weight:400;font-size:0.85rem;"> ms</span></span>
+                                    </div>
+                                </div>
+                                <div class="result-score-bar">
+                                    ${Array(test.entries).fill().map((_, i) => {
+                                        const response = test.responses[i];
+                                        if (!response) return `<div class="result-score-dot empty">${i+1}</div>`;
+                                        return `<div class="result-score-dot ${response.isCorrect ? 'correct' : 'incorrect'}" title="Trial ${i+1}: ${response.isCorrect ? 'Correct' : 'Incorrect'} — ${response.responseTime || 0}ms">
+                                            ${response.isCorrect ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-xmark"></i>'}
+                                        </div>`;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>`;
+                });
+
                 const summaryHTML = `
                     <div class="summary">
-                        <h3>Summary</h3>
-                        <p>Overall Score: ${totalCorrect} / ${totalTrials} (${overallPercentage}%)</p>
-                        <p>Average Response Time: ${avgResponseTime}ms</p>
+                        <h3><i class="fa-solid fa-clipboard-check me-2"></i>Summary</h3>
+                        <div class="summary-stats">
+                            <div class="summary-stat">
+                                <div class="summary-stat-value ${scoreColorClass}">${overallPercentage}%</div>
+                                <div class="summary-stat-label">Overall Score</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-stat-value">${totalCorrect}<span style="color:var(--text-muted);font-weight:400;font-size:1rem;">/${totalTrials}</span></div>
+                                <div class="summary-stat-label">Correct</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-stat-value">${avgResponseTime}<span style="color:var(--text-muted);font-weight:400;font-size:1rem;"> ms</span></div>
+                                <div class="summary-stat-label">Avg Response</div>
+                            </div>
+                        </div>
                         <div id="saveStatus"></div>
-                        <button id="restartButton" class="btn">Restart Test</button>
-                        <button id="homeButton" class="btn" style="margin-left: 10px;">Home</button>
+                        <div class="summary-actions">
+                            <button id="restartButton" class="btn"><i class="fa-solid fa-rotate-right me-1"></i> Restart</button>
+                            <button id="homeButton" class="btn-outline"><i class="fa-solid fa-house me-1"></i> Home</button>
+                        </div>
                     </div>
                 `;
-                
+
                 testResults.innerHTML = resultsHTML;
                 finalResults.innerHTML = summaryHTML;
                 
