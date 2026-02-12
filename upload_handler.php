@@ -102,41 +102,113 @@ try {
         }
     }
     
-    // Handle feedback image files
+    // Handle feedback image files (legacy - uploads to feedback/ root)
     if (isset($_FILES['feedback_image_files'])) {
         $feedbackUploadDir = __DIR__ . '/assets/uploads/feedback/';
         if (!is_dir($feedbackUploadDir)) {
             mkdir($feedbackUploadDir, 0777, true);
         }
-        
+
         foreach ($_FILES['feedback_image_files']['tmp_name'] as $key => $tmpName) {
             if (!empty($tmpName) && is_uploaded_file($tmpName)) {
                 $originalName = $_FILES['feedback_image_files']['name'][$key];
                 $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-                
+
                 // Validate image file type
                 if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
                     throw new Exception("Invalid feedback image file type: $originalName");
                 }
-                
+
                 // Validate filename is safe (no path traversal, special chars that could cause issues)
                 if (strpos($originalName, '..') !== false || strpos($originalName, '/') !== false || strpos($originalName, '\\') !== false) {
                     throw new Exception("Invalid filename: $originalName contains unsafe characters");
                 }
-                
+
                 // Use original filename, check for duplicates
                 $safeName = $originalName;
                 $targetPath = $feedbackUploadDir . $safeName;
-                
+
                 // Check if file already exists
                 if (file_exists($targetPath)) {
                     throw new Exception("Feedback image file '$originalName' already exists. Please rename the file or delete the existing one.");
                 }
-                
+
                 if (move_uploaded_file($tmpName, $targetPath)) {
                     $uploadedFiles[] = $safeName;
                 } else {
                     throw new Exception("Failed to move uploaded feedback image file: $originalName");
+                }
+            }
+        }
+    }
+
+    // Handle correct feedback image files (uploads to feedback/correct/)
+    if (isset($_FILES['correct_image_files'])) {
+        $correctUploadDir = __DIR__ . '/assets/uploads/feedback/correct/';
+        if (!is_dir($correctUploadDir)) {
+            mkdir($correctUploadDir, 0777, true);
+        }
+
+        foreach ($_FILES['correct_image_files']['tmp_name'] as $key => $tmpName) {
+            if (!empty($tmpName) && is_uploaded_file($tmpName)) {
+                $originalName = $_FILES['correct_image_files']['name'][$key];
+                $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
+                    throw new Exception("Invalid correct image file type: $originalName");
+                }
+
+                if (strpos($originalName, '..') !== false || strpos($originalName, '/') !== false || strpos($originalName, '\\') !== false) {
+                    throw new Exception("Invalid filename: $originalName contains unsafe characters");
+                }
+
+                $safeName = $originalName;
+                $targetPath = $correctUploadDir . $safeName;
+
+                if (file_exists($targetPath)) {
+                    throw new Exception("Correct image file '$originalName' already exists. Please rename the file or delete the existing one.");
+                }
+
+                if (move_uploaded_file($tmpName, $targetPath)) {
+                    $uploadedFiles[] = $safeName;
+                } else {
+                    throw new Exception("Failed to move uploaded correct image file: $originalName");
+                }
+            }
+        }
+    }
+
+    // Handle incorrect feedback image files (uploads to feedback/incorrect/)
+    if (isset($_FILES['incorrect_image_files'])) {
+        $incorrectUploadDir = __DIR__ . '/assets/uploads/feedback/incorrect/';
+        if (!is_dir($incorrectUploadDir)) {
+            mkdir($incorrectUploadDir, 0777, true);
+        }
+
+        foreach ($_FILES['incorrect_image_files']['tmp_name'] as $key => $tmpName) {
+            if (!empty($tmpName) && is_uploaded_file($tmpName)) {
+                $originalName = $_FILES['incorrect_image_files']['name'][$key];
+                $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
+                    throw new Exception("Invalid incorrect image file type: $originalName");
+                }
+
+                if (strpos($originalName, '..') !== false || strpos($originalName, '/') !== false || strpos($originalName, '\\') !== false) {
+                    throw new Exception("Invalid filename: $originalName contains unsafe characters");
+                }
+
+                $safeName = $originalName;
+                $targetPath = $incorrectUploadDir . $safeName;
+
+                if (file_exists($targetPath)) {
+                    throw new Exception("Incorrect image file '$originalName' already exists. Please rename the file or delete the existing one.");
+                }
+
+                if (move_uploaded_file($tmpName, $targetPath)) {
+                    $uploadedFiles[] = $safeName;
+                } else {
+                    throw new Exception("Failed to move uploaded incorrect image file: $originalName");
                 }
             }
         }

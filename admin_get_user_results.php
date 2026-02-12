@@ -100,9 +100,30 @@ try {
         $sessionGroups[$sessionId]['results'][] = $result;
     }
     
+    // Load assessment configs to get image/audio info
+    $assessmentsFile = __DIR__ . '/assets/assessments.json';
+    $assessments = file_exists($assessmentsFile) ? json_decode(file_get_contents($assessmentsFile), true) : [];
+
+    // Build a lookup from assessment name to its first test config
+    $assessmentConfigByName = [];
+    foreach ($assessments as $id => $assessment) {
+        $name = $assessment['name'] ?? '';
+        if (!empty($name) && !empty($assessment['tests'])) {
+            $test = $assessment['tests'][0];
+            $assessmentConfigByName[$name] = [
+                'left_image' => $test['left_image'] ?? '',
+                'center_image' => $test['center_image'] ?? '',
+                'right_image' => $test['right_image'] ?? '',
+                'left_sound' => $test['left_sound'] ?? '',
+                'center_sound' => $test['center_sound'] ?? '',
+                'right_sound' => $test['right_sound'] ?? '',
+            ];
+        }
+    }
+
     // Calculate statistics for each test session
     $processedResults = [];
-    
+
     foreach ($sessionGroups as $sessionId => $session) {
         $leftCorrect = 0;
         $leftIncorrect = 0;
@@ -112,14 +133,22 @@ try {
         $rightIncorrect = 0;
         $totalResponseTime = 0;
         $responseCount = 0;
-        
+        $leftResponseTime = 0;
+        $leftResponseCount = 0;
+        $centerResponseTime = 0;
+        $centerResponseCount = 0;
+        $rightResponseTime = 0;
+        $rightResponseCount = 0;
+
         foreach ($session['results'] as $result) {
             $isCorrect = ($result['user_answer'] === $result['correct_answer']);
             $totalResponseTime += $result['response_time'];
             $responseCount++;
-            
+
             switch ($result['correct_answer']) {
                 case 'Left':
+                    $leftResponseTime += $result['response_time'];
+                    $leftResponseCount++;
                     if ($isCorrect) {
                         $leftCorrect++;
                     } else {
@@ -127,6 +156,8 @@ try {
                     }
                     break;
                 case 'Center':
+                    $centerResponseTime += $result['response_time'];
+                    $centerResponseCount++;
                     if ($isCorrect) {
                         $centerCorrect++;
                     } else {
@@ -134,6 +165,8 @@ try {
                     }
                     break;
                 case 'Right':
+                    $rightResponseTime += $result['response_time'];
+                    $rightResponseCount++;
                     if ($isCorrect) {
                         $rightCorrect++;
                     } else {
@@ -142,14 +175,15 @@ try {
                     break;
             }
         }
-        
+
         // Calculate test duration in milliseconds (sum of all response times)
-        // This represents total time from first sound to final click
         $testTimeMs = $totalResponseTime;
-        
-        // Calculate average response time
-        $avgResponseTime = $responseCount > 0 ? round($totalResponseTime / $responseCount) : 0;
-        
+
+        // Calculate average response times per channel
+        $leftAvgResponseTime = $leftResponseCount > 0 ? round($leftResponseTime / $leftResponseCount) : 0;
+        $centerAvgResponseTime = $centerResponseCount > 0 ? round($centerResponseTime / $centerResponseCount) : 0;
+        $rightAvgResponseTime = $rightResponseCount > 0 ? round($rightResponseTime / $rightResponseCount) : 0;
+
         // Create individual trial data for score bar visualization
         $trialResults = [];
         foreach ($session['results'] as $result) {
@@ -160,7 +194,10 @@ try {
                 'responseTime' => $result['response_time']
             ];
         }
-        
+
+        // Look up assessment config for image/audio info
+        $config = $assessmentConfigByName[$session['testName']] ?? null;
+
         $processedResults[] = [
             'sessionId' => $sessionId,
             'testName' => $session['testName'],
@@ -171,9 +208,12 @@ try {
             'centerIncorrect' => $centerIncorrect,
             'rightCorrect' => $rightCorrect,
             'rightIncorrect' => $rightIncorrect,
+            'leftAvgResponseTime' => $leftAvgResponseTime,
+            'centerAvgResponseTime' => $centerAvgResponseTime,
+            'rightAvgResponseTime' => $rightAvgResponseTime,
             'testTimeMs' => $testTimeMs,
-            'avgResponseTime' => $avgResponseTime,
-            'trials' => $trialResults
+            'trials' => $trialResults,
+            'config' => $config
         ];
     }
     
