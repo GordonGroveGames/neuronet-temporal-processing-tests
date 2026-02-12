@@ -21,9 +21,15 @@ try {
         throw new Exception('Failed to load assessments');
     }
     
+    // Filter by selected IDs if provided
+    $selectedIds = isset($_GET['ids']) ? explode(',', $_GET['ids']) : [];
+    if (!empty($selectedIds)) {
+        $assessments = array_intersect_key($assessments, array_flip($selectedIds));
+    }
+
     // Transform the data structure for the test interface
     $transformedAssessments = [];
-    
+
     foreach ($assessments as $assessmentId => $assessment) {
         $transformedAssessment = [
             'id' => $assessmentId,

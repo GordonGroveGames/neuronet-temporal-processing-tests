@@ -487,7 +487,12 @@ if (!$userInfo) {
             // Load assessments from admin data
             async function loadAssessments() {
                 try {
-                    const response = await fetch('get_assessments.php');
+                    const params = new URLSearchParams(window.location.search);
+                    const selectedIds = params.get('assessments') || '';
+                    const fetchUrl = selectedIds
+                        ? 'get_assessments.php?ids=' + encodeURIComponent(selectedIds)
+                        : 'get_assessments.php';
+                    const response = await fetch(fetchUrl);
                     const data = await response.json();
                     
                     if (!data.success) {
