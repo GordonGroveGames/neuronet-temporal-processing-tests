@@ -10,6 +10,7 @@ $userInfo = get_test_user_info();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeuroNet Temporal Processing Tests</title>
+    <link rel="stylesheet" href="assets/css/touch-fixes.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -65,6 +66,13 @@ $userInfo = get_test_user_info();
         
         .continue-btn:hover {
             background-color: #2b6cb0; /* Slightly lighter blue on hover */
+        }
+
+        @media (pointer: coarse) {
+            .continue-btn {
+                min-height: 44px;
+                padding: 14px 32px;
+            }
         }
     </style>
 </head>

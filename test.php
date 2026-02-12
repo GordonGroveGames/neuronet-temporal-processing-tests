@@ -12,8 +12,9 @@ if (!$userInfo) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NeuroNet Temporal Processing Test</title>
+    <link rel="stylesheet" href="assets/css/touch-fixes.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
@@ -138,11 +139,14 @@ if (!$userInfo) {
             font-size: 24px;
             font-weight: 600;
             user-select: none;
+            -webkit-user-select: none;
             position: relative;
             overflow: hidden;
             padding: 20px;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
         }
-        
+
         .test-image {
             width: 100%;
             height: 100%;
@@ -152,6 +156,10 @@ if (!$userInfo) {
             position: absolute;
             top: 0;
             left: 0;
+            pointer-events: none;
+            -webkit-user-drag: none;
+            -webkit-touch-callout: none;
+            touch-action: none;
         }
         
         .test-section:last-child {
@@ -194,6 +202,9 @@ if (!$userInfo) {
             padding: 15px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             overflow: hidden;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            pointer-events: none;
         }
         
         .score-bar {
@@ -218,7 +229,14 @@ if (!$userInfo) {
             display: flex;
             align-items: center;
             justify-content: center;
+            pointer-events: none;
             /* Removed padding-bottom to allow dynamic height */
+        }
+
+        .score-indicator img {
+            -webkit-user-drag: none;
+            -webkit-touch-callout: none;
+            pointer-events: none;
         }
         
         /* Ensure square aspect ratio for colored indicators without images */
@@ -327,6 +345,10 @@ if (!$userInfo) {
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
         
         .countdown-content {
@@ -340,6 +362,7 @@ if (!$userInfo) {
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             transition: transform 0.2s ease;
             cursor: pointer;
+            touch-action: manipulation;
         }
         
         .countdown-number:hover {
@@ -365,15 +388,15 @@ if (!$userInfo) {
             
             <div class="test-area">
                 <div class="test-section" data-zone="Left">
-                    <img class="test-image" src="" alt="Left option" style="display: none;">
+                    <img class="test-image" src="" alt="Left option" style="display: none;" draggable="false">
                     <span class="test-label">Left</span>
                 </div>
                 <div class="test-section" data-zone="Center">
-                    <img class="test-image" src="" alt="Center option" style="display: none;">
+                    <img class="test-image" src="" alt="Center option" style="display: none;" draggable="false">
                     <span class="test-label">Center</span>
                 </div>
                 <div class="test-section" data-zone="Right">
-                    <img class="test-image" src="" alt="Right option" style="display: none;">
+                    <img class="test-image" src="" alt="Right option" style="display: none;" draggable="false">
                     <span class="test-label">Right</span>
                 </div>
             </div>
@@ -500,10 +523,35 @@ if (!$userInfo) {
             }
             
             // Initialize the application
+            let touchHandled = false;
+
             async function init() {
-                // Set up event listeners
+                // Set up event listeners — touch + click with double-fire guard
                 testSections.forEach(section => {
-                    section.addEventListener('click', handleSectionClick);
+                    section.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        touchHandled = true;
+                        handleSectionClick({ currentTarget: this });
+                        setTimeout(() => { touchHandled = false; }, 400);
+                    }, { passive: false });
+
+                    section.addEventListener('click', function(e) {
+                        if (touchHandled) return;
+                        handleSectionClick(e);
+                    });
+                });
+
+                // Prevent page scrolling/bouncing during active testing
+                document.body.addEventListener('touchmove', function(e) {
+                    if (resultsScreen.style.display === 'block') return;
+                    e.preventDefault();
+                }, { passive: false });
+
+                // Prevent context menu on long-press (image save dialog)
+                document.addEventListener('contextmenu', function(e) {
+                    if (e.target.closest('.test-area') || e.target.closest('.score-container') || e.target.closest('.countdown-overlay')) {
+                        e.preventDefault();
+                    }
                 });
                 
                 // Load assessments then start tests
@@ -572,13 +620,26 @@ if (!$userInfo) {
                 countdownOverlay.style.display = 'flex';
                 countdownNumber.textContent = 'Click to Start';
                 countdownNumber.className = 'countdown-number';
-                
-                // Make the overlay clickable to start the trial
-                countdownOverlay.onclick = function() {
+
+                // Touch + click handler with double-fire guard
+                let countdownTouchHandled = false;
+
+                function handleCountdownStart(e) {
+                    if (e.type === 'touchstart') {
+                        e.preventDefault();
+                        countdownTouchHandled = true;
+                        setTimeout(() => { countdownTouchHandled = false; }, 400);
+                    }
+                    if (e.type === 'click' && countdownTouchHandled) return;
+
                     countdownOverlay.style.display = 'none';
-                    countdownOverlay.onclick = null; // Remove click handler
+                    countdownOverlay.removeEventListener('touchstart', handleCountdownStart);
+                    countdownOverlay.removeEventListener('click', handleCountdownStart);
                     startTrial();
-                };
+                }
+
+                countdownOverlay.addEventListener('touchstart', handleCountdownStart, { passive: false });
+                countdownOverlay.addEventListener('click', handleCountdownStart);
             }
             
             // Setup the test display with images and prepare sounds
@@ -851,9 +912,13 @@ if (!$userInfo) {
                                 img.alt = isCorrect ? 'Correct' : 'Incorrect';
                                 img.style.width = '100%';
                                 img.style.height = 'auto';
-                                img.style.maxHeight = '80px'; // Reasonable max height
-                                img.style.objectFit = 'contain'; // Show full image without cropping
+                                img.style.maxHeight = '80px';
+                                img.style.objectFit = 'contain';
                                 img.style.borderRadius = '3px';
+                                img.draggable = false;
+                                img.style.webkitUserDrag = 'none';
+                                img.style.webkitTouchCallout = 'none';
+                                img.style.pointerEvents = 'none';
                                 
                                 // When image loads, adjust the score bar height
                                 img.onload = function() {
@@ -1097,8 +1162,8 @@ if (!$userInfo) {
                 let repeatCount = 0;
                 
                 for (let i = 0; i < length; i++) {
-                    // Filter out the last zone if it's been repeated 3 times
-                    const availableZones = repeatCount >= 3 
+                    // Filter out the last zone if it's been repeated 2 times
+                    const availableZones = repeatCount >= 2
                         ? zones.filter(zone => zone !== lastZone)
                         : [...zones];
                     

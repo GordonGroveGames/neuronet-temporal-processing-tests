@@ -1,0 +1,48 @@
+/* ============================================
+   GLOBAL TOUCH / IPAD OPTIMIZATIONS
+   Included on all pages to prevent unwanted
+   touch gestures, image dragging, and bounce.
+   ============================================ */
+
+/* Prevent pull-to-refresh and edge-bounce */
+html {
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+}
+
+body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent image dragging globally */
+img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    -webkit-touch-callout: none;
+}
+
+/* Remove tap highlight on all interactive elements */
+a,
+button,
+[onclick],
+.btn,
+.test-section,
+.file-option,
+.countdown-number {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Disable hover effects on pure touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .score-indicator:hover {
+        transform: none !important;
+    }
+    .countdown-number:hover {
+        transform: none !important;
+        color: inherit !important;
+    }
+    .file-option:hover {
+        background-color: inherit !important;
+    }
+}

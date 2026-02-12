@@ -65,7 +65,9 @@ $numTests = $editing ? count($assessment['tests']) : 1;
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $editing ? 'Edit' : 'Create' ?> Assessment - NNTPT Admin</title>
+    <link rel="stylesheet" href="assets/css/touch-fixes.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
     <style>
     .file-selector {
@@ -75,12 +77,16 @@ $numTests = $editing ? count($assessment['tests']) : 1;
         border-radius: 0.375rem;
         padding: 0.5rem;
         margin-top: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+        overscroll-behavior: contain;
     }
     .file-option {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0.25rem;
+        padding: 0.5rem;
+        min-height: 44px;
         cursor: pointer;
         border-radius: 0.25rem;
     }
@@ -94,12 +100,27 @@ $numTests = $editing ? count($assessment['tests']) : 1;
         background-color: #e7f3ff;
         border: 1px solid #0d6efd;
     }
+    .file-selector img {
+        pointer-events: none;
+        -webkit-user-drag: none;
+        -webkit-touch-callout: none;
+    }
     .image-preview {
         width: 40px;
         height: 40px;
         object-fit: cover;
         margin-right: 0.5rem;
         border-radius: 0.25rem;
+    }
+    @media (pointer: coarse) {
+        .image-preview {
+            width: 56px;
+            height: 56px;
+        }
+        .file-option .btn {
+            min-width: 44px;
+            min-height: 44px;
+        }
     }
     .upload-section {
         margin-bottom: 1rem;
@@ -119,7 +140,11 @@ $numTests = $editing ? count($assessment['tests']) : 1;
     
     function selectFile(type, position, testIndex, filename) {
         let filePath;
-        if (type === 'feedback_image') {
+        if (type === 'correct_image') {
+            filePath = 'assets/uploads/feedback/correct/' + filename;
+        } else if (type === 'incorrect_image') {
+            filePath = 'assets/uploads/feedback/incorrect/' + filename;
+        } else if (type === 'feedback_image') {
             filePath = 'assets/uploads/feedback/' + filename;
         } else if (filename.startsWith('sounds/')) {
             filePath = 'assets/' + filename;
@@ -131,6 +156,7 @@ $numTests = $editing ? count($assessment['tests']) : 1;
         const container = document.getElementById(type + '_' + position + '_selector_' + testIndex);
         container.querySelectorAll('.file-option').forEach(opt => opt.classList.remove('selected'));
         event.target.closest('.file-option').classList.add('selected');
+        markDirty();
     }
     
     function showUploadConfirmation(type) {
@@ -212,11 +238,12 @@ $numTests = $editing ? count($assessment['tests']) : 1;
     function unselectFeedbackFile(type, position, testIndex) {
         // Clear the hidden input value
         document.getElementById(type + '_' + position + '_' + testIndex).value = '';
-        
+
         // Update selected state
         const container = document.getElementById(type + '_' + position + '_selector_' + testIndex);
         container.querySelectorAll('.file-option').forEach(opt => opt.classList.remove('selected'));
         event.target.closest('.file-option').classList.add('selected');
+        markDirty();
     }
     
     function validateForm() {
@@ -283,6 +310,36 @@ $numTests = $editing ? count($assessment['tests']) : 1;
         // Append to body (hidden)
         document.body.appendChild(audio);
     }
+
+    // --- Save button dirty-state tracking ---
+    const isEditing = <?= json_encode($editing) ?>;
+    let formDirty = false;
+
+    function markDirty() {
+        if (formDirty) return;
+        formDirty = true;
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = false;
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-success');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // For new (unsaved) assessments, start dirty immediately
+        if (!isEditing) {
+            markDirty();
+            return;
+        }
+
+        // For existing assessments, listen for any changes
+        const form = document.querySelector('form[method="post"]');
+
+        // Text inputs and selects
+        form.querySelectorAll('input[type="text"], select').forEach(function(el) {
+            el.addEventListener('input', markDirty);
+            el.addEventListener('change', markDirty);
+        });
+    });
     </script>
 </head>
 <body class="bg-light">
@@ -309,7 +366,15 @@ $numTests = $editing ? count($assessment['tests']) : 1;
             </div>
         </div>
         <?php for ($i = 0; $i < 10; $i++):
-            $test = $assessment['tests'][$i] ?? ['left_image'=>'','center_image'=>'','right_image'=>'','left_sound'=>'','center_sound'=>'','right_sound'=>'']; ?>
+            $defaultTest = $editing ? ['left_image'=>'','center_image'=>'','right_image'=>'','left_sound'=>'','center_sound'=>'','right_sound'=>''] : [
+                'left_image'=>'assets/uploads/cat.png',
+                'center_image'=>'assets/uploads/dog.png',
+                'right_image'=>'assets/uploads/cow.png',
+                'left_sound'=>'assets/uploads/cat.wav',
+                'center_sound'=>'assets/uploads/dog.wav',
+                'right_sound'=>'assets/uploads/calf.wav',
+            ];
+            $test = $assessment['tests'][$i] ?? $defaultTest; ?>
         <div id="test_block_<?= $i ?>" class="card mb-3" style="<?= $i >= $numTests ? 'display:none;' : '' ?>">
             <div class="card-header">Test <?= $i+1 ?></div>
             <div class="card-body">
@@ -490,90 +555,138 @@ $numTests = $editing ? count($assessment['tests']) : 1;
                     </div>
                 </div>
                 
-                <!-- Correct and Incorrect Image Selection Section -->
+                <!-- Correct Image Selection Section -->
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="text-warning mb-0">✅❌ Correct and Incorrect Image Selection</h6>
+                        <h6 class="text-success mb-0">✅ Correct Image</h6>
                         <?php if ($i == 0): ?>
                         <div>
-                            <input type="file" id="upload_feedback_image" class="form-control" multiple accept="image/*" style="display: none;" onchange="showUploadConfirmation('feedback_image')">
-                            <button type="button" class="btn btn-warning btn-sm" onclick="document.getElementById('upload_feedback_image').click()">Upload Images</button>
+                            <input type="file" id="upload_correct_image" class="form-control" multiple accept="image/*" style="display: none;" onchange="showUploadConfirmation('correct_image')">
+                            <button type="button" class="btn btn-success btn-sm" onclick="document.getElementById('upload_correct_image').click()">Upload Correct Images</button>
                         </div>
                         <?php endif; ?>
                     </div>
                     <?php if ($i == 0): ?>
-                    <div id="feedback_image_upload_confirmation" style="display: none;" class="mt-3">
+                    <div id="correct_image_upload_confirmation" style="display: none;" class="mt-3">
                         <div class="alert alert-info">
-                            <strong id="feedback_image_file_count">0</strong> image(s) selected
+                            <strong id="correct_image_file_count">0</strong> image(s) selected
                             <div class="mt-2">
-                                <button type="button" class="btn btn-success btn-sm" onclick="confirmUpload('feedback_image')">Confirm Upload</button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelUpload('feedback_image')">Cancel</button>
+                                <button type="button" class="btn btn-success btn-sm" onclick="confirmUpload('correct_image')">Confirm Upload</button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelUpload('correct_image')">Cancel</button>
                             </div>
                         </div>
                     </div>
                     <?php endif; ?>
                     <div class="row mb-2">
-                        <div class="col-md-4">
-                            <label>Correct Image</label>
-                            <input type="hidden" id="feedback_image_correct_<?= $i ?>" name="correct_image[]" value="<?= htmlspecialchars($test['correct_image'] ?? '') ?>">
-                            <div class="file-selector" id="feedback_image_correct_selector_<?= $i ?>">
+                        <div class="col-md-6">
                             <?php
-                            $feedbackUploadDir = __DIR__ . '/assets/uploads/feedback/';
-                            $feedbackImageFiles = [];
-                            if (is_dir($feedbackUploadDir)) {
-                                $files = scandir($feedbackUploadDir);
+                            $correctUploadDir = __DIR__ . '/assets/uploads/feedback/correct/';
+                            $correctImageFiles = [];
+                            if (is_dir($correctUploadDir)) {
+                                $files = scandir($correctUploadDir);
                                 foreach ($files as $file) {
                                     if (in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
-                                        $feedbackImageFiles[] = $file;
+                                        $correctImageFiles[] = $file;
                                     }
                                 }
                             }
-                            
-                            // Add "None/Clear" option
-                            $isNoneSelected = empty($test['correct_image'] ?? '');
+
+                            // Determine default: "Full Milk Bottle.bmp" for new tests
+                            $correctValue = $test['correct_image'] ?? '';
+                            if (!$editing && empty($correctValue)) {
+                                // Default for new assessments
+                                if (in_array('Full Milk Bottle.bmp', $correctImageFiles)) {
+                                    $correctValue = 'assets/uploads/feedback/correct/Full Milk Bottle.bmp';
+                                }
+                            }
+                            $isNoneSelected = empty($correctValue);
                             ?>
-                            <div class="file-option<?= $isNoneSelected ? ' selected' : '' ?>" onclick="unselectFeedbackFile('feedback_image', 'correct', <?= $i ?>)">
-                                <span style="color: #6c757d; font-style: italic;">❌ None / Clear Selection</span>
+                            <input type="hidden" id="correct_image_select_<?= $i ?>" name="correct_image[]" value="<?= htmlspecialchars($correctValue) ?>">
+                            <div class="file-selector" id="correct_image_select_selector_<?= $i ?>">
+                                <div class="file-option<?= $isNoneSelected ? ' selected' : '' ?>" onclick="unselectFeedbackFile('correct_image', 'select', <?= $i ?>)">
+                                    <span style="color: #6c757d; font-style: italic;">❌ None / Clear Selection</span>
+                                </div>
+                                <?php foreach ($correctImageFiles as $file):
+                                    $isSelected = $correctValue === 'assets/uploads/feedback/correct/' . $file;
+                                ?>
+                                <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('correct_image', 'select', <?= $i ?>, '<?= $file ?>')">
+                                    <img src="assets/uploads/feedback/correct/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
+                                    <span><?= $file ?></span>
+                                </div>
+                                <?php endforeach; ?>
                             </div>
-                            <?php
-                            foreach ($feedbackImageFiles as $file): 
-                                $isSelected = ($test['correct_image'] ?? '') === 'assets/uploads/feedback/' . $file;
-                            ?>
-                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('feedback_image', 'correct', <?= $i ?>, '<?= $file ?>')">
-                                <img src="assets/uploads/feedback/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
-                                <span><?= $file ?></span>
-                            </div>
-                            <?php endforeach; ?>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <label>Incorrect Image</label>
-                        <input type="hidden" id="feedback_image_incorrect_<?= $i ?>" name="incorrect_image[]" value="<?= htmlspecialchars($test['incorrect_image'] ?? '') ?>">
-                        <div class="file-selector" id="feedback_image_incorrect_selector_<?= $i ?>">
-                            <?php
-                            // Add "None/Clear" option
-                            $isNoneSelected = empty($test['incorrect_image'] ?? '');
-                            ?>
-                            <div class="file-option<?= $isNoneSelected ? ' selected' : '' ?>" onclick="unselectFeedbackFile('feedback_image', 'incorrect', <?= $i ?>)">
-                                <span style="color: #6c757d; font-style: italic;">❌ None / Clear Selection</span>
+                </div>
+
+                <!-- Incorrect Image Selection Section -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="text-danger mb-0">❌ Incorrect Image</h6>
+                        <?php if ($i == 0): ?>
+                        <div>
+                            <input type="file" id="upload_incorrect_image" class="form-control" multiple accept="image/*" style="display: none;" onchange="showUploadConfirmation('incorrect_image')">
+                            <button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('upload_incorrect_image').click()">Upload Incorrect Images</button>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($i == 0): ?>
+                    <div id="incorrect_image_upload_confirmation" style="display: none;" class="mt-3">
+                        <div class="alert alert-info">
+                            <strong id="incorrect_image_file_count">0</strong> image(s) selected
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-success btn-sm" onclick="confirmUpload('incorrect_image')">Confirm Upload</button>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelUpload('incorrect_image')">Cancel</button>
                             </div>
-                            <?php foreach ($feedbackImageFiles as $file): 
-                                $isSelected = ($test['incorrect_image'] ?? '') === 'assets/uploads/feedback/' . $file;
-                            ?>
-                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('feedback_image', 'incorrect', <?= $i ?>, '<?= $file ?>')">
-                                <img src="assets/uploads/feedback/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
-                                <span><?= $file ?></span>
-                            </div>
-                            <?php endforeach; ?>
                         </div>
                     </div>
+                    <?php endif; ?>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <?php
+                            $incorrectUploadDir = __DIR__ . '/assets/uploads/feedback/incorrect/';
+                            $incorrectImageFiles = [];
+                            if (is_dir($incorrectUploadDir)) {
+                                $files = scandir($incorrectUploadDir);
+                                foreach ($files as $file) {
+                                    if (in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
+                                        $incorrectImageFiles[] = $file;
+                                    }
+                                }
+                            }
+
+                            // Determine default: "Empty Milk Bottle.bmp" for new tests
+                            $incorrectValue = $test['incorrect_image'] ?? '';
+                            if (!$editing && empty($incorrectValue)) {
+                                // Default for new assessments
+                                if (in_array('Empty Milk Bottle.bmp', $incorrectImageFiles)) {
+                                    $incorrectValue = 'assets/uploads/feedback/incorrect/Empty Milk Bottle.bmp';
+                                }
+                            }
+                            $isNoneSelected = empty($incorrectValue);
+                            ?>
+                            <input type="hidden" id="incorrect_image_select_<?= $i ?>" name="incorrect_image[]" value="<?= htmlspecialchars($incorrectValue) ?>">
+                            <div class="file-selector" id="incorrect_image_select_selector_<?= $i ?>">
+                                <div class="file-option<?= $isNoneSelected ? ' selected' : '' ?>" onclick="unselectFeedbackFile('incorrect_image', 'select', <?= $i ?>)">
+                                    <span style="color: #6c757d; font-style: italic;">❌ None / Clear Selection</span>
+                                </div>
+                                <?php foreach ($incorrectImageFiles as $file):
+                                    $isSelected = $incorrectValue === 'assets/uploads/feedback/incorrect/' . $file;
+                                ?>
+                                <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('incorrect_image', 'select', <?= $i ?>, '<?= $file ?>')">
+                                    <img src="assets/uploads/feedback/incorrect/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
+                                    <span><?= $file ?></span>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <?php endfor; ?>
         
-        <button type="submit" class="btn btn-success" onclick="return validateForm()">Save Assessment</button>
+        <button type="submit" class="btn btn-secondary" id="saveBtn" onclick="return validateForm()" disabled>Save Assessment</button>
     </form>
 </div>
 <script>updateTests();</script>

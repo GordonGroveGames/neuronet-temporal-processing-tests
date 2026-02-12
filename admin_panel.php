@@ -17,9 +17,52 @@ $canManageAssessments = can_manage_assessments();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NNTPT Admin</title>
+    <link rel="stylesheet" href="assets/css/touch-fixes.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <style>
+        @media (pointer: coarse) {
+            .btn-sm {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
+                min-height: 44px;
+            }
+            td a {
+                display: inline-block;
+                padding: 0.25rem;
+                min-height: 44px;
+                line-height: 2;
+            }
+            .modal .form-control,
+            .modal .form-select {
+                min-height: 44px;
+                font-size: 1rem;
+            }
+            .column-filter {
+                min-height: 44px;
+            }
+        }
+    </style>
     <script>
+        function playAudio(filePath) {
+            const existingAudio = document.getElementById('preview_audio');
+            if (existingAudio) {
+                existingAudio.pause();
+                existingAudio.remove();
+            }
+            const audio = document.createElement('audio');
+            audio.id = 'preview_audio';
+            audio.src = filePath;
+            audio.volume = 0.5;
+            audio.play().catch(error => {
+                console.error('Audio playback failed:', error);
+                alert('Could not play audio file.');
+            });
+            audio.addEventListener('ended', function() { audio.remove(); });
+            document.body.appendChild(audio);
+        }
+
         function deleteAssessment(assessmentId, assessmentName) {
             if (confirm(`Are you sure you want to delete the assessment "${assessmentName}"? This action cannot be undone.`)) {
                 fetch('admin_delete_assessment.php', {
@@ -80,7 +123,7 @@ $canManageAssessments = can_manage_assessments();
         <div class="tab-pane fade show active" id="assessments" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Assessments</h2>
-                <a href="admin_assessment.php" class="btn btn-primary">Create/Edit New Assessment</a>
+                <a href="admin_assessment.php" class="btn btn-primary">+ Create New</a>
             </div>
             <?php
             // List assessments from JSON
@@ -100,49 +143,78 @@ $canManageAssessments = can_manage_assessments();
                 }
             }
             ?>
-            <table class="table table-bordered bg-white">
-                <thead>
-                    <tr>
-                        <th>Assessment Name</th>
-                        <th>Number of Tests</th>
-                        <th>Created By</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php if (empty($assessments)): ?>
-                    <tr><td colspan="4" class="text-center">No assessments found.</td></tr>
-                <?php else:
-                    foreach ($assessments as $id => $assessment): 
-                        $createdBy = $assessment['created_by'] ?? 'admin';
-                        $isOwner = ($createdBy === $_SESSION['admin_user']);
-                        $canEdit = $canManageAssessments && ($isOwner || in_array($currentUserRole, ['admin', 'site_admin']));
-                        $canDelete = $canEdit;
-                    ?>
-                        <tr>
-                            <td><?= htmlspecialchars($assessment['name']) ?></td>
-                            <td><?= isset($assessment['tests']) ? count($assessment['tests']) : 0 ?></td>
-                            <td>
-                                <span class="badge <?= $createdBy === 'admin' ? 'bg-danger' : 'bg-info' ?>">
-                                    <?= htmlspecialchars($createdBy) ?>
-                                </span>
-                            </td>
-                            <td>
-                                <?php if ($canEdit): ?>
-                                    <a href="admin_assessment.php?id=<?= urlencode($id) ?>" class="btn btn-sm btn-outline-secondary me-2">Edit</a>
-                                <?php else: ?>
-                                    <a href="admin_assessment.php?id=<?= urlencode($id) ?>" class="btn btn-sm btn-outline-info me-2">View</a>
-                                <?php endif; ?>
-                                
-                                <?php if ($canDelete): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAssessment('<?= htmlspecialchars($id) ?>', '<?= htmlspecialchars($assessment['name']) ?>')">Delete</button>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach;
-                endif; ?>
-                </tbody>
-            </table>
+            <?php if (empty($assessments)): ?>
+                <div class="alert alert-info text-center">No assessments found.</div>
+            <?php else:
+                foreach ($assessments as $id => $assessment):
+                    $createdBy = $assessment['created_by'] ?? 'admin';
+                    $isOwner = ($createdBy === $_SESSION['admin_user']);
+                    $canEdit = $canManageAssessments && ($isOwner || in_array($currentUserRole, ['admin', 'site_admin']));
+                    $canDelete = $canEdit;
+                    $test = isset($assessment['tests'][0]) ? $assessment['tests'][0] : [];
+                    $leftImg = $test['left_image'] ?? '';
+                    $centerImg = $test['center_image'] ?? '';
+                    $rightImg = $test['right_image'] ?? '';
+                    $leftSound = $test['left_sound'] ?? '';
+                    $centerSound = $test['center_sound'] ?? '';
+                    $rightSound = $test['right_sound'] ?? '';
+                ?>
+                <div class="card mb-3 bg-white">
+                    <div class="card-header d-flex justify-content-between align-items-center" style="background-color:#f1f3f5;">
+                        <div>
+                            <strong style="font-size:1.05rem;"><?= htmlspecialchars($assessment['name']) ?></strong>
+                            <span class="badge <?= $createdBy === 'admin' ? 'bg-danger' : 'bg-info' ?> ms-2">
+                                <?= htmlspecialchars($createdBy) ?>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <?php if ($canEdit): ?>
+                                <a href="admin_assessment.php?id=<?= urlencode($id) ?>" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            <?php else: ?>
+                                <a href="admin_assessment.php?id=<?= urlencode($id) ?>" class="btn btn-sm btn-outline-info">View</a>
+                            <?php endif; ?>
+                            <?php if ($canDelete): ?>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAssessment('<?= htmlspecialchars($id) ?>', '<?= htmlspecialchars($assessment['name']) ?>')">Delete</button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding:12px;">
+                        <div style="display:flex;gap:12px;">
+                            <?php
+                            $channels = [
+                                ['label' => 'Left', 'color' => '#0d6efd', 'img' => $leftImg, 'sound' => $leftSound],
+                                ['label' => 'Center', 'color' => '#6f42c1', 'img' => $centerImg, 'sound' => $centerSound],
+                                ['label' => 'Right', 'color' => '#fd7e14', 'img' => $rightImg, 'sound' => $rightSound],
+                            ];
+                            foreach ($channels as $ch):
+                                $imgName = $ch['img'] ? pathinfo($ch['img'], PATHINFO_FILENAME) : '';
+                                $audioName = $ch['sound'] ? pathinfo($ch['sound'], PATHINFO_FILENAME) : '';
+                            ?>
+                            <div style="flex:1;border:2px solid <?= $ch['color'] ?>;border-radius:8px;padding:10px;background:white;">
+                                <div style="font-weight:600;color:<?= $ch['color'] ?>;margin-bottom:8px;text-align:center;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.5px;"><?= $ch['label'] ?></div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                    <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                                        <?php if ($ch['img']): ?>
+                                            <img src="<?= htmlspecialchars($ch['img']) ?>" style="width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid #dee2e6;flex-shrink:0;" alt="<?= htmlspecialchars($imgName) ?>">
+                                        <?php else: ?>
+                                            <div style="width:48px;height:48px;border-radius:4px;background:#e9ecef;display:flex;align-items:center;justify-content:center;color:#6c757d;font-weight:bold;flex-shrink:0;"><?= $ch['label'][0] ?></div>
+                                        <?php endif; ?>
+                                        <div style="font-weight:600;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;" title="<?= htmlspecialchars($imgName) ?>"><?= htmlspecialchars($imgName ?: '—') ?></div>
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                                        <span style="font-size:0.8rem;color:#6c757d;white-space:nowrap;" title="<?= htmlspecialchars($audioName) ?>"><?= htmlspecialchars($audioName ?: '—') ?></span>
+                                        <?php if ($ch['sound']): ?>
+                                            <button type="button" onclick="playAudio('<?= htmlspecialchars($ch['sound']) ?>')" style="background:none;border:1px solid #dee2e6;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.85rem;line-height:1;" title="Play <?= htmlspecialchars($audioName) ?>">▶️</button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach;
+            endif; ?>
         </div>
 
         <!-- Users Tab -->
@@ -655,14 +727,19 @@ $canManageAssessments = can_manage_assessments();
             return;
         }
         
-        if (password && password !== confirmPassword) {
-            alert('Passwords do not match');
-            return;
-        }
-        
-        if (password && password.length < 6) {
-            alert('Password must be at least 6 characters long');
-            return;
+        if (password || confirmPassword) {
+            if (!password || !confirmPassword) {
+                alert('Please fill in both password fields');
+                return;
+            }
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters long');
+                return;
+            }
         }
         
         // Basic email validation
@@ -860,87 +937,122 @@ $canManageAssessments = can_manage_assessments();
         });
     }
     
-    // Display detailed user results in a table
+    // Display detailed user results
     function displayUserResults(results) {
         if (!results || results.length === 0) {
-            document.getElementById('userDetailsContent').innerHTML = 
+            document.getElementById('userDetailsContent').innerHTML =
                 '<div class="alert alert-info">No test results found for this user.</div>';
             return;
         }
-        
+
         const isAdmin = <?= json_encode(in_array($currentUserRole, ['admin', 'site_admin'])) ?>;
-        
-        let html = `
-            <table class="table table-bordered table-striped bg-white">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Test Name</th>
-                        <th>Test Date</th>
-                        <th>Left Accuracy</th>
-                        <th>Center Accuracy</th>
-                        <th>Right Accuracy</th>
-                        <th>Test Time (ms)</th>
-                        <th>Avg Response Time (ms)</th>
-                        ${isAdmin ? '<th style="width: 80px;">Actions</th>' : ''}
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        
-        // Helper function to format numbers with commas
+
         function formatNumber(num) {
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
-        
-        results.forEach((result, index) => {
+
+        function filenameFromPath(path) {
+            if (!path) return '';
+            const parts = path.replace(/\\/g, '/').split('/');
+            const file = parts[parts.length - 1];
+            // Strip extension
+            return file.replace(/\.[^.]+$/, '');
+        }
+
+        function buildChannelCard(label, borderColor, imgSrc, imgName, audioSrc, audioName, trials, correct, accuracy, avgMs) {
+            const thumbHtml = imgSrc
+                ? `<img src="${imgSrc}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid #dee2e6;flex-shrink:0;" alt="${escapeHtml(imgName)}">`
+                : `<div style="width:48px;height:48px;border-radius:4px;background:#e9ecef;display:flex;align-items:center;justify-content:center;color:#6c757d;font-weight:bold;flex-shrink:0;">${label.charAt(0)}</div>`;
+
+            const playBtn = audioSrc
+                ? `<button type="button" onclick="playAudio('${escapeHtml(audioSrc)}')" style="background:none;border:1px solid #dee2e6;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.85rem;line-height:1;" title="Play ${escapeHtml(audioName)}">▶️</button>`
+                : '';
+
+            return `
+                <div style="flex:1;border:2px solid ${borderColor};border-radius:8px;padding:10px;background:white;">
+                    <div style="font-weight:600;color:${borderColor};margin-bottom:8px;text-align:center;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.5px;">${label}</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+                        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                            ${thumbHtml}
+                            <div style="font-weight:600;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;" title="${escapeHtml(imgName)}">${escapeHtml(imgName || '—')}</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+                            <span style="font-size:0.8rem;color:#6c757d;white-space:nowrap;" title="${escapeHtml(audioName)}">${escapeHtml(audioName || '—')}</span>
+                            ${playBtn}
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.8rem;">
+                        <div style="color:#6c757d;">Trials:</div>
+                        <div style="font-weight:600;text-align:right;">${trials}</div>
+                        <div style="color:#6c757d;">Accuracy:</div>
+                        <div style="font-weight:600;text-align:right;color:${accuracy >= 80 ? '#28a745' : accuracy >= 50 ? '#ffc107' : '#dc3545'}">${correct}/${trials} (${accuracy}%)</div>
+                        <div style="color:#6c757d;">Avg RT:</div>
+                        <div style="font-weight:600;text-align:right;">${formatNumber(avgMs)} ms</div>
+                    </div>
+                </div>`;
+        }
+
+        let html = '';
+
+        results.forEach((result) => {
             const totalTrials = result.trials ? result.trials.length : 0;
             const correctTrials = result.trials ? result.trials.filter(t => t.correct).length : 0;
             const scorePercentage = totalTrials > 0 ? Math.round((correctTrials / totalTrials) * 100) : 0;
-            
-            // Calculate accuracy percentages for each position
+
             const leftTrials = result.leftCorrect + result.leftIncorrect;
             const centerTrials = result.centerCorrect + result.centerIncorrect;
             const rightTrials = result.rightCorrect + result.rightIncorrect;
-            
+
             const leftAccuracy = leftTrials > 0 ? Math.round((result.leftCorrect / leftTrials) * 100) : 0;
             const centerAccuracy = centerTrials > 0 ? Math.round((result.centerCorrect / centerTrials) * 100) : 0;
             const rightAccuracy = rightTrials > 0 ? Math.round((result.rightCorrect / rightTrials) * 100) : 0;
-            
+
+            const cfg = result.config || {};
+            const leftImgName = filenameFromPath(cfg.left_image);
+            const centerImgName = filenameFromPath(cfg.center_image);
+            const rightImgName = filenameFromPath(cfg.right_image);
+            const leftAudioName = filenameFromPath(cfg.left_sound);
+            const centerAudioName = filenameFromPath(cfg.center_sound);
+            const rightAudioName = filenameFromPath(cfg.right_sound);
+
             html += `
-                <tr>
-                    <td>${escapeHtml(result.testName)}</td>
-                    <td>${formatDate(result.testDate)}</td>
-                    <td class="text-center">${result.leftCorrect}/${leftTrials} (${leftAccuracy}%)</td>
-                    <td class="text-center">${result.centerCorrect}/${centerTrials} (${centerAccuracy}%)</td>
-                    <td class="text-center">${result.rightCorrect}/${rightTrials} (${rightAccuracy}%)</td>
-                    <td>${formatNumber(result.testTimeMs || 0)}</td>
-                    <td>${formatNumber(result.avgResponseTime || 0)}</td>
-                    ${isAdmin ? `<td class="text-center"><img src="assets/images/trash_icon.svg" alt="Delete" style="width: 32px; height: 32px; cursor: pointer;" onclick="deleteTestSession('${escapeHtml(result.sessionId)}', '${escapeHtml(result.testName)}', '${formatDate(result.testDate)}')" title="Delete this test session"></td>` : ''}
-                </tr>
-                <tr>
-                    <td colspan="${isAdmin ? '8' : '7'}" style="padding: 8px 12px; background-color: #f8f9fa;">
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color:#f1f3f5;">
+                    <div>
+                        <strong style="font-size:1.05rem;">${escapeHtml(result.testName)}</strong>
+                        <span class="text-muted ms-3" style="font-size:0.85rem;">${formatDate(result.testDate)}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span style="font-size:0.85rem;color:#6c757d;">Total Time: <strong>${formatNumber(result.testTimeMs || 0)} ms</strong></span>
+                        <span style="font-size:0.85rem;color:${scorePercentage >= 80 ? '#28a745' : scorePercentage >= 50 ? '#ffc107' : '#dc3545'};font-weight:600;">${correctTrials}/${totalTrials} (${scorePercentage}%)</span>
+                        ${isAdmin ? `<img src="assets/images/trash_icon.svg" alt="Delete" style="width:28px;height:28px;cursor:pointer;" onclick="deleteTestSession('${escapeHtml(result.sessionId)}', '${escapeHtml(result.testName)}', '${formatDate(result.testDate)}')" title="Delete this test session">` : ''}
+                    </div>
+                </div>
+                <div class="card-body" style="padding:12px;">
+                    <div style="display:flex;gap:12px;margin-bottom:12px;">
+                        ${buildChannelCard('Left', '#0d6efd', cfg.left_image, leftImgName, cfg.left_sound, leftAudioName, leftTrials, result.leftCorrect, leftAccuracy, result.leftAvgResponseTime || 0)}
+                        ${buildChannelCard('Center', '#6f42c1', cfg.center_image, centerImgName, cfg.center_sound, centerAudioName, centerTrials, result.centerCorrect, centerAccuracy, result.centerAvgResponseTime || 0)}
+                        ${buildChannelCard('Right', '#fd7e14', cfg.right_image, rightImgName, cfg.right_sound, rightAudioName, rightTrials, result.rightCorrect, rightAccuracy, result.rightAvgResponseTime || 0)}
+                    </div>
+                    <div style="padding:8px 4px;background-color:#f8f9fa;border-radius:6px;">
                         <div class="d-flex align-items-center gap-3">
-                            <small class="text-muted">Trial Results:</small>
-                            <div class="score-bar d-flex gap-1" style="flex-grow: 1;">
+                            <small class="text-muted" style="white-space:nowrap;">Trial Results:</small>
+                            <div class="d-flex gap-1" style="flex-grow:1;flex-wrap:wrap;">
                                 ${result.trials ? result.trials.map((trial, trialIndex) => {
                                     const bgColor = trial.correct ? '#28a745' : '#dc3545';
                                     const title = `Trial ${trialIndex + 1}: ${trial.userAnswer} (correct: ${trial.correctAnswer}) - ${trial.responseTime}ms`;
-                                    const channelLetter = trial.correctAnswer.charAt(0).toUpperCase(); // L, C, or R
-                                    return `<div class="score-indicator" style="width: 32px; height: 32px; background-color: ${bgColor}; border-radius: 3px; position: relative;" title="${title}">
-                                        <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 16px; font-weight: bold;">
-                                            ${channelLetter}
-                                        </span>
+                                    const channelLetter = trial.correctAnswer.charAt(0).toUpperCase();
+                                    return `<div style="width:28px;height:28px;background-color:${bgColor};border-radius:3px;position:relative;flex-shrink:0;" title="${title}">
+                                        <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:14px;font-weight:bold;">${channelLetter}</span>
                                     </div>`;
                                 }).join('') : ''}
                             </div>
-                            <small class="text-muted">${correctTrials}/${totalTrials} (${scorePercentage}%)</small>
                         </div>
-                    </td>
-                </tr>
-            `;
+                    </div>
+                </div>
+            </div>`;
         });
-        
-        html += '</tbody></table>';
+
         document.getElementById('userDetailsContent').innerHTML = html;
     }
     
