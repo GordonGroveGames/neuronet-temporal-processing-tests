@@ -533,3 +533,325 @@ a, .btn, .card-modern, .nav-link, .form-control, .badge-pill, .btn-play {
         height: 44px;
     }
 }
+
+/* ============================================
+   Wizard — Assessment Creator
+   ============================================ */
+
+/* --- Stepper --- */
+.wizard-stepper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+}
+.wizard-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+.wizard-step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border: 2px solid var(--border-light);
+    transition: all var(--transition);
+}
+.wizard-step.active .wizard-step-number {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+}
+.wizard-step.completed .wizard-step-number {
+    background: var(--success);
+    color: #fff;
+    border-color: var(--success);
+}
+.wizard-step-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: center;
+    white-space: nowrap;
+}
+.wizard-step.active .wizard-step-label {
+    color: var(--primary);
+    font-weight: 600;
+}
+.wizard-step.completed .wizard-step-label {
+    color: var(--success);
+}
+.wizard-step-connector {
+    flex: 1;
+    height: 2px;
+    background: var(--border-light);
+    margin: 0 0.5rem;
+    margin-top: 17px;
+    transition: background var(--transition);
+}
+.wizard-step-connector.completed {
+    background: var(--success);
+}
+
+/* --- Upload Slots --- */
+.upload-slot {
+    border: 2px dashed var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--surface-1);
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.upload-slot:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+.upload-slot:active {
+    transform: scale(0.98);
+}
+.upload-slot.has-file {
+    border-style: solid;
+    border-color: var(--success);
+    background: var(--success-light);
+    cursor: default;
+}
+.upload-slot.has-error {
+    border-color: var(--danger);
+    background: var(--danger-light);
+    animation: shake 0.4s ease;
+}
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+.upload-slot.uploading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.upload-slot-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--text-muted);
+}
+.upload-slot-empty i {
+    font-size: 1.2rem;
+}
+.upload-slot-empty span {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.upload-slot-filled {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+.upload-slot-thumb {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
+.upload-slot-filename {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+    text-align: left;
+}
+.upload-slot-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.upload-slot-btn {
+    background: var(--surface-0);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    transition: all var(--transition);
+    padding: 0;
+    flex-shrink: 0;
+}
+.upload-slot-btn:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.upload-slot-btn.btn-clear:hover {
+    background: var(--danger-light);
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+/* --- Num Tests Pill Buttons --- */
+.btn-num-test {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--border-light);
+    background: var(--surface-0);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-num-test:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.btn-num-test.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+/* --- Wizard Bottom Nav --- */
+.wizard-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface-0);
+    border-top: 1px solid var(--border-light);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+    padding: 0.75rem 0;
+    z-index: 1020;
+}
+.wizard-nav-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* --- Feedback Upload Cards --- */
+.feedback-upload-card {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    background: var(--surface-0);
+}
+.feedback-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* --- Review Step --- */
+.review-test-card {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background: var(--surface-0);
+}
+.review-slot {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+}
+.review-slot-thumb {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+}
+.review-slot-name {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- Test Status Badge --- */
+.test-status-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-pill);
+}
+.test-status-badge.incomplete {
+    background: var(--warning-light);
+    color: #d97706;
+}
+.test-status-badge.complete {
+    background: var(--success-light);
+    color: #059669;
+}
+
+/* --- Wizard Touch Overrides --- */
+@media (pointer: coarse) {
+    .upload-slot {
+        min-height: 80px;
+        padding: 0.75rem;
+    }
+    .upload-slot-btn {
+        width: 44px;
+        height: 44px;
+    }
+    .wizard-step-number {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* --- Wizard Responsive --- */
+@media (max-width: 575px) {
+    .wizard-step-label {
+        font-size: 0.62rem;
+    }
+    .wizard-step-number {
+        width: 30px;
+        height: 30px;
+        font-size: 0.75rem;
+    }
+    .wizard-step-connector {
+        margin: 0 0.25rem;
+        margin-top: 14px;
+    }
+}

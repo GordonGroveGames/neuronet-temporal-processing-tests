@@ -22,7 +22,7 @@ if ($editing && !$canEditAllAssessments) {
     }
 }
 
-// Handle form submission
+// Handle form submission (same as before)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $assessmentName = trim($_POST['assessment_name'] ?? '');
     $numTests = max(1, min(10, (int)($_POST['num_tests'] ?? 1)));
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'updated_by' => $currentUser,
         'updated_at' => date('Y-m-d H:i:s')
     ];
-    
+
     if (!$editing) {
         $assessments[$saveId]['created_at'] = date('Y-m-d H:i:s');
     }
@@ -60,635 +60,830 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $assessment = $editing ? $assessments[$id] : ['name' => '', 'tests' => []];
 $numTests = $editing ? count($assessment['tests']) : 1;
 
+// Determine default feedback images
+$defaultCorrectImage = '';
+$defaultIncorrectImage = '';
+$correctDir = __DIR__ . '/assets/uploads/feedback/correct/';
+$incorrectDir = __DIR__ . '/assets/uploads/feedback/incorrect/';
+if (file_exists($correctDir . 'Full Milk Bottle.bmp')) {
+    $defaultCorrectImage = 'assets/uploads/feedback/correct/Full Milk Bottle.bmp';
+}
+if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
+    $defaultIncorrectImage = 'assets/uploads/feedback/incorrect/Empty Milk Bottle.bmp';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $editing ? 'Edit' : 'Create' ?> Assessment - NNTPT Admin</title>
-    <link rel="stylesheet" href="assets/css/touch-fixes.css">
+    <title><?= $editing ? 'Edit' : 'Create' ?> Assessment — The Fluency Factor</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/touch-fixes.css">
+    <link rel="stylesheet" href="assets/css/admin-styles.css">
     <style>
-    .file-selector {
-        max-height: 150px;
-        overflow-y: auto;
-        border: 1px solid #ced4da;
-        border-radius: 0.375rem;
-        padding: 0.5rem;
-        margin-top: 0.5rem;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-y;
-        overscroll-behavior: contain;
-    }
-    .file-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.5rem;
-        min-height: 44px;
-        cursor: pointer;
-        border-radius: 0.25rem;
-    }
-    .file-option .btn {
-        flex-shrink: 0;
-    }
-    .file-option:hover {
-        background-color: #f8f9fa;
-    }
-    .file-option.selected {
-        background-color: #e7f3ff;
-        border: 1px solid #0d6efd;
-    }
-    .file-selector img {
-        pointer-events: none;
-        -webkit-user-drag: none;
-        -webkit-touch-callout: none;
-    }
-    .image-preview {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        margin-right: 0.5rem;
-        border-radius: 0.25rem;
-    }
-    @media (pointer: coarse) {
-        .image-preview {
-            width: 56px;
-            height: 56px;
-        }
-        .file-option .btn {
-            min-width: 44px;
-            min-height: 44px;
-        }
-    }
-    .upload-section {
-        margin-bottom: 1rem;
-        padding: 1rem;
-        border: 1px solid #dee2e6;
-        border-radius: 0.375rem;
-        background-color: #f8f9fa;
-    }
+        .card-modern:hover { transform: none; } /* disable lift on wizard cards */
     </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="container mt-3 mb-2">
+        <a href="admin_panel.php" class="btn-ghost" style="text-decoration:none;">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back to Admin Panel
+        </a>
+        <h2 class="mt-2" style="font-weight:700;">
+            <?= $editing ? 'Edit' : 'Create New' ?> Assessment
+        </h2>
+    </div>
+
+    <!-- Progress Stepper -->
+    <div class="container mb-3">
+        <div class="card-modern" style="padding:1rem 1.25rem;">
+            <div class="wizard-stepper" id="wizardStepper">
+                <div class="wizard-step active" data-step="1">
+                    <div class="wizard-step-number">1</div>
+                    <div class="wizard-step-label">Name & Setup</div>
+                </div>
+                <div class="wizard-step-connector" data-after="1"></div>
+                <div class="wizard-step" data-step="2">
+                    <div class="wizard-step-number">2</div>
+                    <div class="wizard-step-label">Upload Assets</div>
+                </div>
+                <div class="wizard-step-connector" data-after="2"></div>
+                <div class="wizard-step" data-step="3">
+                    <div class="wizard-step-number">3</div>
+                    <div class="wizard-step-label">Feedback</div>
+                </div>
+                <div class="wizard-step-connector" data-after="3"></div>
+                <div class="wizard-step" data-step="4">
+                    <div class="wizard-step-number">4</div>
+                    <div class="wizard-step-label">Review & Save</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wizard Panels Container -->
+    <div class="container" id="wizardContainer">
+
+        <!-- ========== STEP 1: Name & Setup ========== -->
+        <div class="wizard-panel" data-step="1">
+            <div class="card-modern">
+                <div class="card-header">
+                    <strong>Step 1 of 4</strong> &mdash; Name & Setup
+                </div>
+                <div class="card-body" style="padding:1.5rem;">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Assessment Name</label>
+                        <input type="text" class="form-control form-control-lg" id="wizardName"
+                               placeholder="e.g. Cat Dog Cow"
+                               value="<?= htmlspecialchars($assessment['name']) ?>">
+                        <div class="form-text">Give your assessment a descriptive name.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Number of Tests</label>
+                        <div class="d-flex gap-2 flex-wrap" id="numTestsSelector">
+                            <?php for ($i = 1; $i <= 10; $i++): ?>
+                            <button type="button"
+                                    class="btn-num-test<?= $i == $numTests ? ' active' : '' ?>"
+                                    data-value="<?= $i ?>"
+                                    onclick="setNumTests(<?= $i ?>)">
+                                <?= $i ?>
+                            </button>
+                            <?php endfor; ?>
+                        </div>
+                        <div class="form-text">Each test has 3 images and 3 sounds (Left / Center / Right).</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== STEP 2: Upload Assets ========== -->
+        <div class="wizard-panel" data-step="2" style="display:none;">
+            <div id="testCardsContainer">
+                <!-- JS renders test cards here -->
+            </div>
+        </div>
+
+        <!-- ========== STEP 3: Feedback Images ========== -->
+        <div class="wizard-panel" data-step="3" style="display:none;">
+            <div class="card-modern">
+                <div class="card-header">
+                    <strong>Step 3 of 4</strong> &mdash; Feedback Images (Optional)
+                </div>
+                <div class="card-body" style="padding:1.5rem;">
+                    <p class="text-secondary mb-4">
+                        These images are shown after each response. They apply to all tests. Leave blank to skip.
+                    </p>
+                    <div class="row g-4">
+                        <!-- Correct feedback -->
+                        <div class="col-12 col-sm-6">
+                            <div class="feedback-upload-card">
+                                <div class="feedback-label">
+                                    <i class="fa-solid fa-circle-check" style="color:var(--success);"></i>
+                                    Correct Response
+                                </div>
+                                <div class="upload-slot" id="feedbackCorrectSlot"
+                                     data-type="correct_image"
+                                     onclick="triggerUpload(this)">
+                                    <input type="file" accept="image/*" style="display:none;"
+                                           onchange="handleFeedbackUpload(this, 'correct')">
+                                    <div class="upload-slot-empty">
+                                        <i class="fa-solid fa-image"></i>
+                                        <span>Tap to add image</span>
+                                    </div>
+                                    <div class="upload-slot-filled" style="display:none;">
+                                        <img class="upload-slot-thumb" src="" alt="">
+                                        <span class="upload-slot-filename"></span>
+                                        <div class="upload-slot-actions">
+                                            <button type="button" class="upload-slot-btn"
+                                                    onclick="event.stopPropagation(); triggerUpload(this.closest('.upload-slot'))">
+                                                <i class="fa-solid fa-arrows-rotate"></i>
+                                            </button>
+                                            <button type="button" class="upload-slot-btn btn-clear"
+                                                    onclick="event.stopPropagation(); clearFeedback('correct')">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Incorrect feedback -->
+                        <div class="col-12 col-sm-6">
+                            <div class="feedback-upload-card">
+                                <div class="feedback-label">
+                                    <i class="fa-solid fa-circle-xmark" style="color:var(--danger);"></i>
+                                    Incorrect Response
+                                </div>
+                                <div class="upload-slot" id="feedbackIncorrectSlot"
+                                     data-type="incorrect_image"
+                                     onclick="triggerUpload(this)">
+                                    <input type="file" accept="image/*" style="display:none;"
+                                           onchange="handleFeedbackUpload(this, 'incorrect')">
+                                    <div class="upload-slot-empty">
+                                        <i class="fa-solid fa-image"></i>
+                                        <span>Tap to add image</span>
+                                    </div>
+                                    <div class="upload-slot-filled" style="display:none;">
+                                        <img class="upload-slot-thumb" src="" alt="">
+                                        <span class="upload-slot-filename"></span>
+                                        <div class="upload-slot-actions">
+                                            <button type="button" class="upload-slot-btn"
+                                                    onclick="event.stopPropagation(); triggerUpload(this.closest('.upload-slot'))">
+                                                <i class="fa-solid fa-arrows-rotate"></i>
+                                            </button>
+                                            <button type="button" class="upload-slot-btn btn-clear"
+                                                    onclick="event.stopPropagation(); clearFeedback('incorrect')">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== STEP 4: Review & Save ========== -->
+        <div class="wizard-panel" data-step="4" style="display:none;">
+            <div class="card-modern">
+                <div class="card-header">
+                    <strong>Step 4 of 4</strong> &mdash; Review & Save
+                </div>
+                <div class="card-body" style="padding:1.5rem;">
+                    <div id="reviewContent">
+                        <!-- JS populates review here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden form for submission -->
+            <form method="post" id="wizardForm" style="display:none;">
+                <input type="hidden" name="assessment_name" id="formAssessmentName">
+                <input type="hidden" name="num_tests" id="formNumTests">
+                <div id="formTestInputs"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="wizard-nav" id="wizardNav">
+        <div class="container d-flex justify-content-between align-items-center">
+            <button type="button" class="btn-ghost" id="wizardBackBtn" onclick="wizardBack()" style="text-decoration:none;display:none;">
+                <i class="fa-solid fa-arrow-left me-1"></i> Back
+            </button>
+            <span class="wizard-nav-label" id="wizardNavLabel">Step 1 of 4</span>
+            <button type="button" class="btn-modern-primary" id="wizardNextBtn" onclick="wizardNext()">
+                Next <i class="fa-solid fa-arrow-right ms-1"></i>
+            </button>
+        </div>
+    </div>
+    <div style="height:80px;"></div>
+
     <script>
-    function updateTests() {
-        const n = parseInt(document.getElementById('num_tests').value);
-        for (let i = 0; i < 10; i++) {
-            document.getElementById('test_block_' + i).style.display = i < n ? '' : 'none';
-        }
-    }
-    
-    function selectFile(type, position, testIndex, filename) {
-        let filePath;
-        if (type === 'correct_image') {
-            filePath = 'assets/uploads/feedback/correct/' + filename;
-        } else if (type === 'incorrect_image') {
-            filePath = 'assets/uploads/feedback/incorrect/' + filename;
-        } else if (type === 'feedback_image') {
-            filePath = 'assets/uploads/feedback/' + filename;
-        } else if (filename.startsWith('sounds/')) {
-            filePath = 'assets/' + filename;
-        } else {
-            filePath = 'assets/uploads/' + filename;
-        }
-        document.getElementById(type + '_' + position + '_' + testIndex).value = filePath;
-        // Update selected state
-        const container = document.getElementById(type + '_' + position + '_selector_' + testIndex);
-        container.querySelectorAll('.file-option').forEach(opt => opt.classList.remove('selected'));
-        event.target.closest('.file-option').classList.add('selected');
-        markDirty();
-    }
-    
-    function showUploadConfirmation(type) {
-        const fileInput = document.getElementById('upload_' + type);
-        const confirmation = document.getElementById(type + '_upload_confirmation');
-        const fileCount = document.getElementById(type + '_file_count');
-        
-        if (fileInput.files && fileInput.files.length > 0) {
-            fileCount.textContent = fileInput.files.length;
-            confirmation.style.display = 'block';
-        } else {
-            confirmation.style.display = 'none';
-        }
-    }
-    
-    function cancelUpload(type) {
-        const fileInput = document.getElementById('upload_' + type);
-        const confirmation = document.getElementById(type + '_upload_confirmation');
-        
-        fileInput.value = '';
-        confirmation.style.display = 'none';
-    }
-    
-    function confirmUpload(type) {
-        const fileInput = document.getElementById('upload_' + type);
-        
-        if (!fileInput.files || fileInput.files.length === 0) {
-            alert('No files selected');
-            return;
-        }
-        
-        const formData = new FormData();
-        for (let i = 0; i < fileInput.files.length; i++) {
-            formData.append(type + '_files[]', fileInput.files[i]);
-        }
-        
-        fetch('upload_handler.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.text();
-        })
-        .then(text => {
-            try {
-                // Try to extract JSON from response that might have PHP notices
-                let jsonText = text;
-                const jsonStart = text.indexOf('{');
-                if (jsonStart > 0) {
-                    jsonText = text.substring(jsonStart);
-                }
-                
-                const data = JSON.parse(jsonText);
-                if (data.success) {
-                    alert('Files uploaded successfully!');
-                    // Reset the upload form
-                    const fileInput = document.getElementById('upload_' + type);
-                    const confirmation = document.getElementById(type + '_upload_confirmation');
-                    fileInput.value = '';
-                    confirmation.style.display = 'none';
-                    location.reload();
-                } else {
-                    alert('Upload failed: ' + (data.error || 'Unknown error'));
-                }
-            } catch (e) {
-                console.error('Invalid JSON response:', text);
-                alert('Upload error: Invalid server response');
-            }
-        })
-        .catch(error => {
-            console.error('Upload error:', error);
-            alert('Upload error: ' + error.message);
+    // ============================================
+    // Wizard State
+    // ============================================
+    const wizardState = {
+        currentStep: 1,
+        totalSteps: 4,
+        editing: <?= json_encode($editing) ?>,
+        assessmentName: <?= json_encode($assessment['name']) ?>,
+        numTests: <?= json_encode($numTests) ?>,
+        tests: [],
+        correctImage: <?= json_encode(
+            $editing
+                ? ($assessment['tests'][0]['correct_image'] ?? '')
+                : $defaultCorrectImage
+        ) ?>,
+        incorrectImage: <?= json_encode(
+            $editing
+                ? ($assessment['tests'][0]['incorrect_image'] ?? '')
+                : $defaultIncorrectImage
+        ) ?>
+    };
+
+    // Initialize tests array
+    <?php if ($editing): ?>
+    wizardState.tests = <?= json_encode($assessment['tests']) ?>;
+    <?php else: ?>
+    for (let i = 0; i < wizardState.numTests; i++) {
+        wizardState.tests.push({
+            left_image: '', center_image: '', right_image: '',
+            left_sound: '', center_sound: '', right_sound: ''
         });
     }
-    
-    function unselectFeedbackFile(type, position, testIndex) {
-        // Clear the hidden input value
-        document.getElementById(type + '_' + position + '_' + testIndex).value = '';
+    <?php endif; ?>
 
-        // Update selected state
-        const container = document.getElementById(type + '_' + position + '_selector_' + testIndex);
-        container.querySelectorAll('.file-option').forEach(opt => opt.classList.remove('selected'));
-        event.target.closest('.file-option').classList.add('selected');
-        markDirty();
+    // Current audio element for playback
+    let currentAudio = null;
+
+    // ============================================
+    // Step 1: Num Tests
+    // ============================================
+    function setNumTests(n) {
+        wizardState.numTests = n;
+        // Update pill buttons
+        document.querySelectorAll('.btn-num-test').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.value) === n);
+        });
+        // Extend or trim tests array
+        while (wizardState.tests.length < n) {
+            wizardState.tests.push({
+                left_image: '', center_image: '', right_image: '',
+                left_sound: '', center_sound: '', right_sound: ''
+            });
+        }
+        // Don't delete data if user decreases — just hide extra cards in step 2
     }
-    
-    function validateForm() {
-        const numTests = parseInt(document.getElementById('num_tests').value);
-        const errors = [];
-        
-        for (let i = 0; i < numTests; i++) {
-            const testNum = i + 1;
-            
-            // Check required image fields
-            const leftImage = document.getElementById('image_left_' + i).value;
-            const centerImage = document.getElementById('image_center_' + i).value;
-            const rightImage = document.getElementById('image_right_' + i).value;
-            
-            if (!leftImage) errors.push(`Test ${testNum}: Left Image is required`);
-            if (!centerImage) errors.push(`Test ${testNum}: Center Image is required`);
-            if (!rightImage) errors.push(`Test ${testNum}: Right Image is required`);
-            
-            // Check required audio fields
-            const leftAudio = document.getElementById('audio_left_' + i).value;
-            const centerAudio = document.getElementById('audio_center_' + i).value;
-            const rightAudio = document.getElementById('audio_right_' + i).value;
-            
-            if (!leftAudio) errors.push(`Test ${testNum}: Left Audio is required`);
-            if (!centerAudio) errors.push(`Test ${testNum}: Center Audio is required`);
-            if (!rightAudio) errors.push(`Test ${testNum}: Right Audio is required`);
-            
-            // Feedback images are optional - no validation needed
+
+    // ============================================
+    // Navigation
+    // ============================================
+    function wizardNext() {
+        // Validate current step
+        if (!validateStep(wizardState.currentStep)) return;
+
+        if (wizardState.currentStep === wizardState.totalSteps) {
+            submitWizard();
+            return;
         }
-        
-        if (errors.length > 0) {
-            alert('Please fix the following errors:\n\n' + errors.join('\n'));
-            return false;
+
+        wizardState.currentStep++;
+        renderStep();
+    }
+
+    function wizardBack() {
+        if (wizardState.currentStep <= 1) return;
+        wizardState.currentStep--;
+        renderStep();
+    }
+
+    function renderStep() {
+        const step = wizardState.currentStep;
+
+        // Show/hide panels
+        document.querySelectorAll('.wizard-panel').forEach(p => {
+            p.style.display = parseInt(p.dataset.step) === step ? '' : 'none';
+        });
+
+        // Update stepper
+        document.querySelectorAll('.wizard-step').forEach(s => {
+            const sStep = parseInt(s.dataset.step);
+            s.classList.remove('active', 'completed');
+            if (sStep === step) s.classList.add('active');
+            else if (sStep < step) s.classList.add('completed');
+        });
+        document.querySelectorAll('.wizard-step-connector').forEach(c => {
+            const afterStep = parseInt(c.dataset.after);
+            c.classList.toggle('completed', afterStep < step);
+        });
+
+        // Update nav buttons
+        const backBtn = document.getElementById('wizardBackBtn');
+        const nextBtn = document.getElementById('wizardNextBtn');
+        const navLabel = document.getElementById('wizardNavLabel');
+
+        backBtn.style.display = step === 1 ? 'none' : '';
+        navLabel.textContent = 'Step ' + step + ' of ' + wizardState.totalSteps;
+
+        if (step === wizardState.totalSteps) {
+            nextBtn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Save Assessment';
+        } else {
+            nextBtn.innerHTML = 'Next <i class="fa-solid fa-arrow-right ms-1"></i>';
         }
-        
+
+        // Step-specific rendering
+        if (step === 2) renderTestCards();
+        if (step === 3) renderFeedbackStep();
+        if (step === 4) renderReview();
+
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ============================================
+    // Validation
+    // ============================================
+    function validateStep(step) {
+        if (step === 1) {
+            const name = document.getElementById('wizardName').value.trim();
+            if (!name) {
+                document.getElementById('wizardName').focus();
+                document.getElementById('wizardName').style.borderColor = 'var(--danger)';
+                alert('Please enter an assessment name.');
+                return false;
+            }
+            wizardState.assessmentName = name;
+            document.getElementById('wizardName').style.borderColor = '';
+            return true;
+        }
+
+        if (step === 2) {
+            const errors = [];
+            for (let i = 0; i < wizardState.numTests; i++) {
+                const t = wizardState.tests[i];
+                const missing = [];
+                if (!t.left_image) missing.push('Left Image');
+                if (!t.center_image) missing.push('Center Image');
+                if (!t.right_image) missing.push('Right Image');
+                if (!t.left_sound) missing.push('Left Sound');
+                if (!t.center_sound) missing.push('Center Sound');
+                if (!t.right_sound) missing.push('Right Sound');
+                if (missing.length > 0) {
+                    errors.push('Test ' + (i + 1) + ' is missing: ' + missing.join(', '));
+                }
+            }
+            if (errors.length > 0) {
+                // Highlight empty slots
+                document.querySelectorAll('.upload-slot[data-test]').forEach(slot => {
+                    const ti = parseInt(slot.dataset.test);
+                    if (ti >= wizardState.numTests) return;
+                    const field = slot.dataset.position + '_' + slot.dataset.type;
+                    // Map to state field name
+                    const stateField = slot.dataset.position + '_' + (slot.dataset.type === 'audio' ? 'sound' : 'image');
+                    if (!wizardState.tests[ti][stateField]) {
+                        slot.classList.add('has-error');
+                        setTimeout(() => slot.classList.remove('has-error'), 2000);
+                    }
+                });
+                // Scroll to first error
+                const firstError = document.querySelector('.upload-slot.has-error');
+                if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                alert(errors.join('\n'));
+                return false;
+            }
+            return true;
+        }
+
+        // Steps 3 and 4 need no validation
         return true;
     }
-    
-    function playAudio(filePath) {
-        // Stop any currently playing audio
-        const existingAudio = document.getElementById('preview_audio');
-        if (existingAudio) {
-            existingAudio.pause();
-            existingAudio.remove();
+
+    // ============================================
+    // Step 2: Test Card Rendering
+    // ============================================
+    function renderTestCards() {
+        const container = document.getElementById('testCardsContainer');
+        let html = '';
+
+        for (let i = 0; i < wizardState.numTests; i++) {
+            const t = wizardState.tests[i] || {};
+            const filled = [t.left_image, t.center_image, t.right_image, t.left_sound, t.center_sound, t.right_sound].filter(Boolean).length;
+            const statusClass = filled === 6 ? 'complete' : 'incomplete';
+            const statusText = filled === 6 ? '<i class="fa-solid fa-check me-1"></i>Complete' : filled + ' of 6';
+
+            html += '<div class="card-modern mb-3">';
+            html += '<div class="card-header d-flex align-items-center justify-content-between">';
+            html += '<strong>Test ' + (i + 1) + '</strong>';
+            html += '<span class="test-status-badge ' + statusClass + '" id="testStatus' + i + '">' + statusText + '</span>';
+            html += '</div>';
+            html += '<div class="card-body"><div class="row g-3">';
+
+            // Three columns: Left, Center, Right
+            const channels = [
+                { pos: 'left', label: 'Left', cls: 'channel-left' },
+                { pos: 'center', label: 'Center', cls: 'channel-center' },
+                { pos: 'right', label: 'Right', cls: 'channel-right' }
+            ];
+
+            channels.forEach(ch => {
+                const imgPath = t[ch.pos + '_image'] || '';
+                const audioPath = t[ch.pos + '_sound'] || '';
+
+                html += '<div class="col-12 col-md-4">';
+                html += '<div class="channel-card ' + ch.cls + '">';
+                html += '<div class="channel-label">' + ch.label + '</div>';
+
+                // Image upload slot
+                html += buildSlot(i, 'image', ch.pos, imgPath, 'image/*', 'fa-image', 'Add image');
+
+                // Audio upload slot
+                html += '<div style="margin-top:0.5rem;">';
+                html += buildSlot(i, 'audio', ch.pos, audioPath, 'audio/*', 'fa-volume-high', 'Add audio');
+                html += '</div>';
+
+                html += '</div></div>';
+            });
+
+            html += '</div></div></div>';
         }
-        
-        // Create new audio element
-        const audio = document.createElement('audio');
-        audio.id = 'preview_audio';
-        audio.src = filePath;
-        audio.volume = 0.5; // Set to 50% volume for preview
-        
-        // Play the audio
-        audio.play().catch(error => {
-            console.error('Error playing audio:', error);
-            alert('Could not play audio file. Please check if the file exists and is a valid audio format.');
-        });
-        
-        // Clean up after audio ends
-        audio.addEventListener('ended', function() {
-            audio.remove();
-        });
-        
-        // Append to body (hidden)
-        document.body.appendChild(audio);
+
+        container.innerHTML = html;
     }
 
-    // --- Save button dirty-state tracking ---
-    const isEditing = <?= json_encode($editing) ?>;
-    let formDirty = false;
+    function buildSlot(testIndex, type, position, currentPath, accept, icon, label) {
+        const hasFile = !!currentPath;
+        const filename = currentPath ? currentPath.split('/').pop() : '';
+        const isImage = type === 'image';
 
-    function markDirty() {
-        if (formDirty) return;
-        formDirty = true;
-        const btn = document.getElementById('saveBtn');
-        btn.disabled = false;
-        btn.classList.remove('btn-secondary');
-        btn.classList.add('btn-success');
+        let html = '<div class="upload-slot' + (hasFile ? ' has-file' : '') + '"';
+        html += ' data-test="' + testIndex + '" data-type="' + type + '" data-position="' + position + '"';
+        html += ' onclick="triggerUpload(this)">';
+        html += '<input type="file" accept="' + accept + '" style="display:none;" onchange="handleSlotUpload(this)">';
+
+        // Empty state
+        html += '<div class="upload-slot-empty"' + (hasFile ? ' style="display:none;"' : '') + '>';
+        html += '<i class="fa-solid ' + icon + '"></i>';
+        html += '<span>' + label + '</span>';
+        html += '</div>';
+
+        // Filled state
+        html += '<div class="upload-slot-filled"' + (!hasFile ? ' style="display:none;"' : '') + '>';
+        if (isImage) {
+            html += '<img class="upload-slot-thumb" src="' + (currentPath || '') + '" alt="">';
+        } else {
+            html += '<i class="fa-solid fa-volume-high" style="color:var(--text-secondary);font-size:1.1rem;flex-shrink:0;"></i>';
+        }
+        html += '<span class="upload-slot-filename">' + escapeHtml(filename) + '</span>';
+        html += '<div class="upload-slot-actions">';
+        if (!isImage) {
+            html += '<button type="button" class="upload-slot-btn" onclick="event.stopPropagation(); playSlotAudio(this)" title="Play">';
+            html += '<i class="fa-solid fa-play"></i></button>';
+        }
+        html += '<button type="button" class="upload-slot-btn" onclick="event.stopPropagation(); triggerUpload(this.closest(\'.upload-slot\'))" title="Replace">';
+        html += '<i class="fa-solid fa-arrows-rotate"></i></button>';
+        html += '</div>';
+        html += '</div>';
+
+        html += '</div>';
+        return html;
     }
 
+    function updateTestStatus(testIndex) {
+        const t = wizardState.tests[testIndex];
+        if (!t) return;
+        const filled = [t.left_image, t.center_image, t.right_image, t.left_sound, t.center_sound, t.right_sound].filter(Boolean).length;
+        const badge = document.getElementById('testStatus' + testIndex);
+        if (!badge) return;
+        if (filled === 6) {
+            badge.className = 'test-status-badge complete';
+            badge.innerHTML = '<i class="fa-solid fa-check me-1"></i>Complete';
+        } else {
+            badge.className = 'test-status-badge incomplete';
+            badge.textContent = filled + ' of 6';
+        }
+    }
+
+    // ============================================
+    // Upload Handling
+    // ============================================
+    function triggerUpload(slotEl) {
+        const fileInput = slotEl.querySelector('input[type="file"]');
+        if (fileInput) fileInput.click();
+    }
+
+    function handleSlotUpload(fileInput) {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const slot = fileInput.closest('.upload-slot');
+        const testIndex = parseInt(slot.dataset.test);
+        const type = slot.dataset.type; // 'image' or 'audio'
+        const position = slot.dataset.position; // 'left', 'center', 'right'
+
+        // Determine FormData key for upload_handler.php
+        const formKey = type === 'image' ? 'image_files[]' : 'audio_files[]';
+
+        // Show uploading state
+        slot.classList.add('uploading');
+        slot.classList.remove('has-file', 'has-error');
+
+        const formData = new FormData();
+        formData.append(formKey, file);
+
+        fetch('upload_handler.php', { method: 'POST', body: formData })
+            .then(resp => resp.text())
+            .then(text => {
+                // Handle potential PHP notices before JSON
+                let jsonText = text;
+                const jsonStart = text.indexOf('{');
+                if (jsonStart > 0) jsonText = text.substring(jsonStart);
+                return JSON.parse(jsonText);
+            })
+            .then(data => {
+                slot.classList.remove('uploading');
+                if (data.success && data.files && data.files.length > 0) {
+                    const filename = data.files[0];
+                    const fullPath = 'assets/uploads/' + filename;
+
+                    // Update state
+                    const stateField = position + '_' + (type === 'audio' ? 'sound' : 'image');
+                    wizardState.tests[testIndex][stateField] = fullPath;
+
+                    // Update slot DOM
+                    slot.classList.add('has-file');
+                    slot.querySelector('.upload-slot-empty').style.display = 'none';
+                    const filled = slot.querySelector('.upload-slot-filled');
+                    filled.style.display = 'flex';
+                    filled.querySelector('.upload-slot-filename').textContent = filename;
+
+                    if (type === 'image') {
+                        filled.querySelector('.upload-slot-thumb').src = fullPath;
+                    }
+
+                    updateTestStatus(testIndex);
+                } else {
+                    slot.classList.add('has-error');
+                    setTimeout(() => slot.classList.remove('has-error'), 3000);
+                    alert('Upload failed: ' + (data.error || 'Unknown error'));
+                }
+                // Reset file input so same file can be re-selected
+                fileInput.value = '';
+            })
+            .catch(err => {
+                slot.classList.remove('uploading');
+                slot.classList.add('has-error');
+                setTimeout(() => slot.classList.remove('has-error'), 3000);
+                alert('Upload error: ' + err.message);
+                fileInput.value = '';
+            });
+    }
+
+    // ============================================
+    // Step 3: Feedback Images
+    // ============================================
+    function renderFeedbackStep() {
+        // Populate correct feedback slot
+        populateFeedbackSlot('feedbackCorrectSlot', wizardState.correctImage);
+        // Populate incorrect feedback slot
+        populateFeedbackSlot('feedbackIncorrectSlot', wizardState.incorrectImage);
+    }
+
+    function populateFeedbackSlot(slotId, path) {
+        const slot = document.getElementById(slotId);
+        if (!slot) return;
+        if (path) {
+            slot.classList.add('has-file');
+            slot.querySelector('.upload-slot-empty').style.display = 'none';
+            const filled = slot.querySelector('.upload-slot-filled');
+            filled.style.display = 'flex';
+            filled.querySelector('.upload-slot-thumb').src = path;
+            filled.querySelector('.upload-slot-filename').textContent = path.split('/').pop();
+        } else {
+            slot.classList.remove('has-file');
+            slot.querySelector('.upload-slot-empty').style.display = '';
+            slot.querySelector('.upload-slot-filled').style.display = 'none';
+        }
+    }
+
+    function handleFeedbackUpload(fileInput, kind) {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const slot = fileInput.closest('.upload-slot');
+        const formKey = kind === 'correct' ? 'correct_image_files[]' : 'incorrect_image_files[]';
+        const pathPrefix = kind === 'correct'
+            ? 'assets/uploads/feedback/correct/'
+            : 'assets/uploads/feedback/incorrect/';
+
+        slot.classList.add('uploading');
+        slot.classList.remove('has-file', 'has-error');
+
+        const formData = new FormData();
+        formData.append(formKey, file);
+
+        fetch('upload_handler.php', { method: 'POST', body: formData })
+            .then(resp => resp.text())
+            .then(text => {
+                let jsonText = text;
+                const jsonStart = text.indexOf('{');
+                if (jsonStart > 0) jsonText = text.substring(jsonStart);
+                return JSON.parse(jsonText);
+            })
+            .then(data => {
+                slot.classList.remove('uploading');
+                if (data.success && data.files && data.files.length > 0) {
+                    const fullPath = pathPrefix + data.files[0];
+
+                    if (kind === 'correct') wizardState.correctImage = fullPath;
+                    else wizardState.incorrectImage = fullPath;
+
+                    slot.classList.add('has-file');
+                    slot.querySelector('.upload-slot-empty').style.display = 'none';
+                    const filled = slot.querySelector('.upload-slot-filled');
+                    filled.style.display = 'flex';
+                    filled.querySelector('.upload-slot-thumb').src = fullPath;
+                    filled.querySelector('.upload-slot-filename').textContent = data.files[0];
+                } else {
+                    slot.classList.add('has-error');
+                    setTimeout(() => slot.classList.remove('has-error'), 3000);
+                    alert('Upload failed: ' + (data.error || 'Unknown error'));
+                }
+                fileInput.value = '';
+            })
+            .catch(err => {
+                slot.classList.remove('uploading');
+                slot.classList.add('has-error');
+                setTimeout(() => slot.classList.remove('has-error'), 3000);
+                alert('Upload error: ' + err.message);
+                fileInput.value = '';
+            });
+    }
+
+    function clearFeedback(kind) {
+        if (kind === 'correct') {
+            wizardState.correctImage = '';
+            populateFeedbackSlot('feedbackCorrectSlot', '');
+        } else {
+            wizardState.incorrectImage = '';
+            populateFeedbackSlot('feedbackIncorrectSlot', '');
+        }
+    }
+
+    // ============================================
+    // Audio Playback
+    // ============================================
+    function playSlotAudio(btn) {
+        const slot = btn.closest('.upload-slot');
+        const testIndex = parseInt(slot.dataset.test);
+        const position = slot.dataset.position;
+        const path = wizardState.tests[testIndex][position + '_sound'];
+        if (!path) return;
+
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+        }
+
+        const audio = new Audio(path);
+        audio.volume = 0.5;
+        currentAudio = audio;
+        audio.play().catch(err => {
+            console.error('Audio playback failed:', err);
+            alert('Could not play audio file.');
+        });
+        audio.onended = function() { currentAudio = null; };
+    }
+
+    // ============================================
+    // Step 4: Review & Save
+    // ============================================
+    function renderReview() {
+        let html = '';
+
+        // Assessment info
+        html += '<div class="mb-3">';
+        html += '<span class="text-secondary">Assessment Name:</span> ';
+        html += '<strong>' + escapeHtml(wizardState.assessmentName) + '</strong>';
+        html += '</div>';
+        html += '<div class="mb-3">';
+        html += '<span class="text-secondary">Number of Tests:</span> ';
+        html += '<strong>' + wizardState.numTests + '</strong>';
+        html += '</div>';
+
+        // Per-test review
+        for (let i = 0; i < wizardState.numTests; i++) {
+            const t = wizardState.tests[i];
+            html += '<div class="review-test-card">';
+            html += '<strong class="d-block mb-2">Test ' + (i + 1) + '</strong>';
+            html += '<div class="row g-2">';
+
+            ['left', 'center', 'right'].forEach(pos => {
+                const imgPath = t[pos + '_image'];
+                const audioPath = t[pos + '_sound'];
+                const posLabel = pos.charAt(0).toUpperCase() + pos.slice(1);
+                const channelColor = pos === 'left' ? 'var(--channel-left)' : pos === 'center' ? 'var(--channel-center)' : 'var(--channel-right)';
+
+                html += '<div class="col-4">';
+                html += '<div style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:' + channelColor + ';margin-bottom:0.25rem;">' + posLabel + '</div>';
+
+                // Image
+                if (imgPath) {
+                    html += '<div class="review-slot">';
+                    html += '<img class="review-slot-thumb" src="' + imgPath + '" alt="">';
+                    html += '<span class="review-slot-name">' + escapeHtml(imgPath.split('/').pop()) + '</span>';
+                    html += '</div>';
+                }
+                // Audio
+                if (audioPath) {
+                    html += '<div class="review-slot">';
+                    html += '<i class="fa-solid fa-volume-high" style="color:var(--text-muted);width:32px;text-align:center;flex-shrink:0;"></i>';
+                    html += '<span class="review-slot-name">' + escapeHtml(audioPath.split('/').pop()) + '</span>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            });
+
+            html += '</div></div>';
+        }
+
+        // Feedback images
+        if (wizardState.correctImage || wizardState.incorrectImage) {
+            html += '<div class="review-test-card">';
+            html += '<strong class="d-block mb-2">Feedback Images</strong>';
+            html += '<div class="row g-2">';
+            if (wizardState.correctImage) {
+                html += '<div class="col-6"><div class="review-slot">';
+                html += '<img class="review-slot-thumb" src="' + wizardState.correctImage + '" alt="">';
+                html += '<span class="review-slot-name"><i class="fa-solid fa-check" style="color:var(--success);margin-right:4px;"></i>' + escapeHtml(wizardState.correctImage.split('/').pop()) + '</span>';
+                html += '</div></div>';
+            }
+            if (wizardState.incorrectImage) {
+                html += '<div class="col-6"><div class="review-slot">';
+                html += '<img class="review-slot-thumb" src="' + wizardState.incorrectImage + '" alt="">';
+                html += '<span class="review-slot-name"><i class="fa-solid fa-xmark" style="color:var(--danger);margin-right:4px;"></i>' + escapeHtml(wizardState.incorrectImage.split('/').pop()) + '</span>';
+                html += '</div></div>';
+            }
+            html += '</div></div>';
+        }
+
+        document.getElementById('reviewContent').innerHTML = html;
+
+        // Populate hidden form
+        document.getElementById('formAssessmentName').value = wizardState.assessmentName;
+        document.getElementById('formNumTests').value = wizardState.numTests;
+
+        let formHtml = '';
+        for (let i = 0; i < wizardState.numTests; i++) {
+            const t = wizardState.tests[i];
+            formHtml += '<input type="hidden" name="left_image[]" value="' + escapeAttr(t.left_image) + '">';
+            formHtml += '<input type="hidden" name="center_image[]" value="' + escapeAttr(t.center_image) + '">';
+            formHtml += '<input type="hidden" name="right_image[]" value="' + escapeAttr(t.right_image) + '">';
+            formHtml += '<input type="hidden" name="left_sound[]" value="' + escapeAttr(t.left_sound) + '">';
+            formHtml += '<input type="hidden" name="center_sound[]" value="' + escapeAttr(t.center_sound) + '">';
+            formHtml += '<input type="hidden" name="right_sound[]" value="' + escapeAttr(t.right_sound) + '">';
+            formHtml += '<input type="hidden" name="correct_image[]" value="' + escapeAttr(wizardState.correctImage) + '">';
+            formHtml += '<input type="hidden" name="incorrect_image[]" value="' + escapeAttr(wizardState.incorrectImage) + '">';
+        }
+        document.getElementById('formTestInputs').innerHTML = formHtml;
+    }
+
+    function submitWizard() {
+        document.getElementById('wizardForm').submit();
+    }
+
+    // ============================================
+    // Utilities
+    // ============================================
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function escapeAttr(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ============================================
+    // Init
+    // ============================================
     document.addEventListener('DOMContentLoaded', function() {
-        // For new (unsaved) assessments, start dirty immediately
-        if (!isEditing) {
-            markDirty();
-            return;
-        }
-
-        // For existing assessments, listen for any changes
-        const form = document.querySelector('form[method="post"]');
-
-        // Text inputs and selects
-        form.querySelectorAll('input[type="text"], select').forEach(function(el) {
-            el.addEventListener('input', markDirty);
-            el.addEventListener('change', markDirty);
+        // Name field sync
+        document.getElementById('wizardName').addEventListener('input', function() {
+            wizardState.assessmentName = this.value.trim();
         });
+
+        // Initial render
+        renderStep();
     });
     </script>
-</head>
-<body class="bg-light">
-<div class="container mt-4">
-    <a href="admin_panel.php" class="btn btn-link">&larr; Back to Admin Panel</a>
-    <h2><?= $editing ? 'Edit' : 'Create New' ?> Assessment</h2>
-    <form method="post">
-        <!-- Assessment Configuration Section -->
-        <div class="upload-section mb-4">
-            <h5 class="text-primary">⚙️ Assessment Configuration</h5>
-            <div class="row">
-                <div class="col-md-6">
-                    <label class="form-label">Assessment Name</label>
-                    <input type="text" class="form-control" name="assessment_name" required value="<?= htmlspecialchars($assessment['name']) ?>">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Number of Tests</label>
-                    <select name="num_tests" id="num_tests" class="form-select" onchange="updateTests()">
-                        <?php for ($i = 1; $i <= 10; $i++): ?>
-                        <option value="<?= $i ?>"<?= $i == $numTests ? ' selected' : '' ?>><?= $i ?></option>
-                        <?php endfor; ?>
-                    </select>
-                </div>
-            </div>
-        </div>
-        <?php for ($i = 0; $i < 10; $i++):
-            $defaultTest = $editing ? ['left_image'=>'','center_image'=>'','right_image'=>'','left_sound'=>'','center_sound'=>'','right_sound'=>''] : [
-                'left_image'=>'assets/uploads/cat.png',
-                'center_image'=>'assets/uploads/dog.png',
-                'right_image'=>'assets/uploads/cow.png',
-                'left_sound'=>'assets/uploads/cat.wav',
-                'center_sound'=>'assets/uploads/dog.wav',
-                'right_sound'=>'assets/uploads/calf.wav',
-            ];
-            $test = $assessment['tests'][$i] ?? $defaultTest; ?>
-        <div id="test_block_<?= $i ?>" class="card mb-3" style="<?= $i >= $numTests ? 'display:none;' : '' ?>">
-            <div class="card-header">Test <?= $i+1 ?></div>
-            <div class="card-body">
-                <?php if ($i == 0): ?>
-                <h5 class="text-success">Test Configuration</h5>
-                <?php endif; ?>
-                
-                <!-- Image Selection Section -->
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="text-primary mb-0">📷 Image Selection for Test <?= $i+1 ?></h6>
-                        <?php if ($i == 0): ?>
-                        <div>
-                            <input type="file" id="upload_image" class="form-control" multiple accept="image/*" style="display: none;" onchange="showUploadConfirmation('image')">
-                            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('upload_image').click()">Upload Images</button>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                    <?php if ($i == 0): ?>
-                    <div id="image_upload_confirmation" style="display: none;" class="mt-3">
-                        <div class="alert alert-info">
-                            <strong id="image_file_count">0</strong> image(s) selected
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-success btn-sm" onclick="confirmUpload('image')">Confirm Upload</button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelUpload('image')">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    <div class="row mb-2">
-                        <div class="col-md-4">
-                            <label>Left Image</label>
-                            <input type="hidden" id="image_left_<?= $i ?>" name="left_image[]" value="<?= htmlspecialchars($test['left_image']) ?>">
-                            <div class="file-selector" id="image_left_selector_<?= $i ?>">
-                            <?php
-                            $uploadDir = __DIR__ . '/assets/uploads/';
-                            $imageFiles = [];
-                            if (is_dir($uploadDir)) {
-                                $files = scandir($uploadDir);
-                                foreach ($files as $file) {
-                                    if (in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
-                                        $imageFiles[] = $file;
-                                    }
-                                }
-                            }
-                            foreach ($imageFiles as $file): 
-                                $isSelected = ($test['left_image'] === 'assets/uploads/' . $file);
-                            ?>
-                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('image', 'left', <?= $i ?>, '<?= $file ?>')">
-                                <img src="assets/uploads/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
-                                <span><?= $file ?></span>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <label>Center Image</label>
-                        <input type="hidden" id="image_center_<?= $i ?>" name="center_image[]" value="<?= htmlspecialchars($test['center_image']) ?>">
-                        <div class="file-selector" id="image_center_selector_<?= $i ?>">
-                            <?php foreach ($imageFiles as $file): 
-                                $isSelected = ($test['center_image'] === 'assets/uploads/' . $file);
-                            ?>
-                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('image', 'center', <?= $i ?>, '<?= $file ?>')">
-                                <img src="assets/uploads/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
-                                <span><?= $file ?></span>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <label>Right Image</label>
-                        <input type="hidden" id="image_right_<?= $i ?>" name="right_image[]" value="<?= htmlspecialchars($test['right_image']) ?>">
-                        <div class="file-selector" id="image_right_selector_<?= $i ?>">
-                            <?php foreach ($imageFiles as $file): 
-                                $isSelected = ($test['right_image'] === 'assets/uploads/' . $file);
-                            ?>
-                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('image', 'right', <?= $i ?>, '<?= $file ?>')">
-                                <img src="assets/uploads/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
-                                <span><?= $file ?></span>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-                
-                <!-- Audio Selection Section -->
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="text-primary mb-0">🎵 Audio Selection for Test <?= $i+1 ?></h6>
-                        <?php if ($i == 0): ?>
-                        <div>
-                            <input type="file" id="upload_audio" class="form-control" multiple accept="audio/*" style="display: none;" onchange="showUploadConfirmation('audio')">
-                            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('upload_audio').click()">Upload Audio</button>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                    <?php if ($i == 0): ?>
-                    <div id="audio_upload_confirmation" style="display: none;" class="mt-3">
-                        <div class="alert alert-info">
-                            <strong id="audio_file_count">0</strong> audio file(s) selected
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-success btn-sm" onclick="confirmUpload('audio')">Confirm Upload</button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelUpload('audio')">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    <div class="row mb-2">
-                        <div class="col-md-4">
-                            <label>Left Sound</label>
-                            <input type="hidden" id="audio_left_<?= $i ?>" name="left_sound[]" value="<?= htmlspecialchars($test['left_sound']) ?>">
-                            <div class="file-selector" id="audio_left_selector_<?= $i ?>">
-                            <?php
-                            $audioFiles = [];
-                            if (is_dir($uploadDir)) {
-                                $files = scandir($uploadDir);
-                                foreach ($files as $file) {
-                                    if (in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['mp3', 'wav', 'ogg', 'm4a'])) {
-                                        $audioFiles[] = $file;
-                                    }
-                                }
-                            }
-                            // Also include files from assets/sounds
-                            $soundsDir = __DIR__ . '/assets/sounds/';
-                            if (is_dir($soundsDir)) {
-                                $soundFiles = scandir($soundsDir);
-                                foreach ($soundFiles as $file) {
-                                    if (in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['mp3', 'wav', 'ogg', 'm4a'])) {
-                                        $audioFiles[] = 'sounds/' . $file;
-                                    }
-                                }
-                            }
-                            foreach ($audioFiles as $file): 
-                                $filePath = strpos($file, 'sounds/') === 0 ? 'assets/' . $file : 'assets/uploads/' . $file;
-                                $fileName = basename($file);
-                                $isSelected = ($test['left_sound'] === $filePath);
-                            ?>
-                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('audio', 'left', <?= $i ?>, '<?= $file ?>')">
-                                <span>🎵 <?= $fileName ?></span>
-                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); playAudio('<?= $filePath ?>')">▶️</button>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <label>Center Sound</label>
-                        <input type="hidden" id="audio_center_<?= $i ?>" name="center_sound[]" value="<?= htmlspecialchars($test['center_sound']) ?>">
-                        <div class="file-selector" id="audio_center_selector_<?= $i ?>">
-                            <?php foreach ($audioFiles as $file): 
-                                $filePath = strpos($file, 'sounds/') === 0 ? 'assets/' . $file : 'assets/uploads/' . $file;
-                                $fileName = basename($file);
-                                $isSelected = ($test['center_sound'] === $filePath);
-                            ?>
-                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('audio', 'center', <?= $i ?>, '<?= $file ?>')">
-                                <span>🎵 <?= $fileName ?></span>
-                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); playAudio('<?= $filePath ?>')">▶️</button>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <label>Right Sound</label>
-                        <input type="hidden" id="audio_right_<?= $i ?>" name="right_sound[]" value="<?= htmlspecialchars($test['right_sound']) ?>">
-                        <div class="file-selector" id="audio_right_selector_<?= $i ?>">
-                            <?php foreach ($audioFiles as $file): 
-                                $filePath = strpos($file, 'sounds/') === 0 ? 'assets/' . $file : 'assets/uploads/' . $file;
-                                $fileName = basename($file);
-                                $isSelected = ($test['right_sound'] === $filePath);
-                            ?>
-                            <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('audio', 'right', <?= $i ?>, '<?= $file ?>')">
-                                <span>🎵 <?= $fileName ?></span>
-                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); playAudio('<?= $filePath ?>')">▶️</button>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-                
-                <!-- Correct Image Selection Section -->
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="text-success mb-0">✅ Correct Image</h6>
-                        <?php if ($i == 0): ?>
-                        <div>
-                            <input type="file" id="upload_correct_image" class="form-control" multiple accept="image/*" style="display: none;" onchange="showUploadConfirmation('correct_image')">
-                            <button type="button" class="btn btn-success btn-sm" onclick="document.getElementById('upload_correct_image').click()">Upload Correct Images</button>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                    <?php if ($i == 0): ?>
-                    <div id="correct_image_upload_confirmation" style="display: none;" class="mt-3">
-                        <div class="alert alert-info">
-                            <strong id="correct_image_file_count">0</strong> image(s) selected
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-success btn-sm" onclick="confirmUpload('correct_image')">Confirm Upload</button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelUpload('correct_image')">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            <?php
-                            $correctUploadDir = __DIR__ . '/assets/uploads/feedback/correct/';
-                            $correctImageFiles = [];
-                            if (is_dir($correctUploadDir)) {
-                                $files = scandir($correctUploadDir);
-                                foreach ($files as $file) {
-                                    if (in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
-                                        $correctImageFiles[] = $file;
-                                    }
-                                }
-                            }
-
-                            // Determine default: "Full Milk Bottle.bmp" for new tests
-                            $correctValue = $test['correct_image'] ?? '';
-                            if (!$editing && empty($correctValue)) {
-                                // Default for new assessments
-                                if (in_array('Full Milk Bottle.bmp', $correctImageFiles)) {
-                                    $correctValue = 'assets/uploads/feedback/correct/Full Milk Bottle.bmp';
-                                }
-                            }
-                            $isNoneSelected = empty($correctValue);
-                            ?>
-                            <input type="hidden" id="correct_image_select_<?= $i ?>" name="correct_image[]" value="<?= htmlspecialchars($correctValue) ?>">
-                            <div class="file-selector" id="correct_image_select_selector_<?= $i ?>">
-                                <div class="file-option<?= $isNoneSelected ? ' selected' : '' ?>" onclick="unselectFeedbackFile('correct_image', 'select', <?= $i ?>)">
-                                    <span style="color: #6c757d; font-style: italic;">❌ None / Clear Selection</span>
-                                </div>
-                                <?php foreach ($correctImageFiles as $file):
-                                    $isSelected = $correctValue === 'assets/uploads/feedback/correct/' . $file;
-                                ?>
-                                <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('correct_image', 'select', <?= $i ?>, '<?= $file ?>')">
-                                    <img src="assets/uploads/feedback/correct/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
-                                    <span><?= $file ?></span>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Incorrect Image Selection Section -->
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="text-danger mb-0">❌ Incorrect Image</h6>
-                        <?php if ($i == 0): ?>
-                        <div>
-                            <input type="file" id="upload_incorrect_image" class="form-control" multiple accept="image/*" style="display: none;" onchange="showUploadConfirmation('incorrect_image')">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('upload_incorrect_image').click()">Upload Incorrect Images</button>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                    <?php if ($i == 0): ?>
-                    <div id="incorrect_image_upload_confirmation" style="display: none;" class="mt-3">
-                        <div class="alert alert-info">
-                            <strong id="incorrect_image_file_count">0</strong> image(s) selected
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-success btn-sm" onclick="confirmUpload('incorrect_image')">Confirm Upload</button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="cancelUpload('incorrect_image')">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            <?php
-                            $incorrectUploadDir = __DIR__ . '/assets/uploads/feedback/incorrect/';
-                            $incorrectImageFiles = [];
-                            if (is_dir($incorrectUploadDir)) {
-                                $files = scandir($incorrectUploadDir);
-                                foreach ($files as $file) {
-                                    if (in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
-                                        $incorrectImageFiles[] = $file;
-                                    }
-                                }
-                            }
-
-                            // Determine default: "Empty Milk Bottle.bmp" for new tests
-                            $incorrectValue = $test['incorrect_image'] ?? '';
-                            if (!$editing && empty($incorrectValue)) {
-                                // Default for new assessments
-                                if (in_array('Empty Milk Bottle.bmp', $incorrectImageFiles)) {
-                                    $incorrectValue = 'assets/uploads/feedback/incorrect/Empty Milk Bottle.bmp';
-                                }
-                            }
-                            $isNoneSelected = empty($incorrectValue);
-                            ?>
-                            <input type="hidden" id="incorrect_image_select_<?= $i ?>" name="incorrect_image[]" value="<?= htmlspecialchars($incorrectValue) ?>">
-                            <div class="file-selector" id="incorrect_image_select_selector_<?= $i ?>">
-                                <div class="file-option<?= $isNoneSelected ? ' selected' : '' ?>" onclick="unselectFeedbackFile('incorrect_image', 'select', <?= $i ?>)">
-                                    <span style="color: #6c757d; font-style: italic;">❌ None / Clear Selection</span>
-                                </div>
-                                <?php foreach ($incorrectImageFiles as $file):
-                                    $isSelected = $incorrectValue === 'assets/uploads/feedback/incorrect/' . $file;
-                                ?>
-                                <div class="file-option<?= $isSelected ? ' selected' : '' ?>" onclick="selectFile('incorrect_image', 'select', <?= $i ?>, '<?= $file ?>')">
-                                    <img src="assets/uploads/feedback/incorrect/<?= $file ?>" class="image-preview" alt="<?= $file ?>">
-                                    <span><?= $file ?></span>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php endfor; ?>
-        
-        <button type="submit" class="btn btn-secondary" id="saveBtn" onclick="return validateForm()" disabled>Save Assessment</button>
-    </form>
-</div>
-<script>updateTests();</script>
 </body>
 </html>
