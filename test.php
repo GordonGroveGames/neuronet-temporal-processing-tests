@@ -14,6 +14,7 @@ if (!$userInfo) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Test — The Fluency Factor</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/touch-fixes.css">
     <link rel="stylesheet" href="assets/css/admin-styles.css">
@@ -513,9 +514,48 @@ if (!$userInfo) {
             transform: scale(1.05);
             color: #34ce57;
         }
+
+        /* Navbar overrides for test page */
+        .navbar-admin {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 900;
+        }
+        body.has-navbar {
+            padding-top: 56px;
+        }
+        #restartTestBtn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        #restartTestBtn:hover {
+            background: rgba(255,255,255,0.22);
+            border-color: rgba(255,255,255,0.4);
+        }
     </style>
 </head>
 <body>
+    <!-- Header Navbar -->
+    <nav class="navbar-admin d-flex justify-content-between align-items-center" id="testNavbar" style="display:none;">
+        <span class="navbar-brand">The Fluency Factor</span>
+        <div class="d-flex align-items-center gap-3">
+            <span style="color:rgba(255,255,255,0.7);font-size:0.85rem;"><?= htmlspecialchars($userInfo['username']) ?></span>
+            <button type="button" class="btn-logout" id="restartTestBtn" style="display:none;">
+                <i class="fa-solid fa-rotate-right me-1"></i> Restart Test
+            </button>
+            <a href="index.php" class="btn-logout"><i class="fa-solid fa-right-from-bracket me-1"></i> Exit</a>
+        </div>
+    </nav>
+
     <div class="test-container">
         <!-- Click to Start Overlay -->
         <div id="countdownOverlay" class="countdown-overlay" style="display: none;">
@@ -589,6 +629,8 @@ if (!$userInfo) {
             const progressText = document.getElementById('progressText');
             const testResults = document.getElementById('testResults');
             const finalResults = document.getElementById('finalResults');
+            const testNavbar = document.getElementById('testNavbar');
+            const restartTestBtn = document.getElementById('restartTestBtn');
             
             // Test configuration - will be loaded from admin assessments
             let TESTS = [];
@@ -680,7 +722,44 @@ if (!$userInfo) {
             // Initialize the application
             let touchHandled = false;
 
+            // Show/hide the restart button based on whether a test is actively running
+            function showRestartButton(show) {
+                restartTestBtn.style.display = show ? '' : 'none';
+            }
+
+            // Restart the current assessment from the beginning without saving
+            function restartAssessment() {
+                // Stop any playing audio
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                    currentAudio = null;
+                }
+
+                // Hide the countdown overlay if visible
+                countdownOverlay.style.display = 'none';
+
+                // Reset all test state — discard partial results
+                currentTestIndex = 0;
+                currentTest = null;
+                testResultsData = [];
+
+                // Re-start from the first test
+                startTests();
+            }
+
+            // Wire up the restart button
+            restartTestBtn.addEventListener('click', function() {
+                if (confirm('Restart? Your progress on the current test will not be saved.')) {
+                    restartAssessment();
+                }
+            });
+
             async function init() {
+                // Show the navbar
+                testNavbar.style.display = '';
+                document.body.classList.add('has-navbar');
+
                 // Set up event listeners — touch + click with double-fire guard
                 testSections.forEach(section => {
                     section.addEventListener('touchstart', function(e) {
@@ -733,6 +812,7 @@ if (!$userInfo) {
             function startTests() {
                 currentTestIndex = 0;
                 testResultsData = [];
+                showRestartButton(true);
                 startNextTest();
             }
             
@@ -1234,6 +1314,7 @@ if (!$userInfo) {
 
             // Show the final results
             async function showResults() {
+                showRestartButton(false);
                 showScreen('results');
 
                 // Calculate overall score
