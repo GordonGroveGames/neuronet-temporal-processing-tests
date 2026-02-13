@@ -855,3 +855,301 @@ a, .btn, .card-modern, .nav-link, .form-control, .badge-pill, .btn-play {
         margin-top: 14px;
     }
 }
+
+/* ============================================================
+   Test Picker & Sub-Section Styles (Decoupled Tests/Assessments)
+   ============================================================ */
+
+/* --- Sub-Section Headers --- */
+.sub-section-header {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.sub-section-header i {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+/* --- Test Compact Card (admin_panel Tests sub-section) --- */
+.test-compact-card {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--surface-0);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all var(--transition);
+}
+.test-compact-card:hover {
+    box-shadow: var(--shadow-sm);
+}
+.test-compact-thumbs {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.test-compact-thumbs img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+    background: var(--surface-1);
+}
+.test-compact-thumbs .thumb-placeholder-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+.test-compact-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.test-compact-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* --- Test Count Badge (on assessment cards) --- */
+.test-count-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-pill);
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* --- Test Picker Grid (admin_assessment.php) --- */
+.test-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+}
+.test-picker-card {
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--surface-0);
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+}
+.test-picker-card:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+}
+.test-picker-card.selected {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+.test-picker-card.selected::after {
+    content: '\f058';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 1.1rem;
+    color: var(--primary);
+}
+.test-picker-thumbs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 0.5rem;
+}
+.test-picker-thumbs img {
+    flex: 1;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+    background: var(--surface-1);
+    min-width: 0;
+}
+.test-picker-thumbs .thumb-placeholder-sm {
+    flex: 1;
+    height: 48px;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    font-weight: 600;
+    min-width: 0;
+}
+.test-picker-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+/* --- Selected Tests List (reorderable) --- */
+.selected-tests-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.selected-test-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--surface-0);
+    margin-bottom: 0.5rem;
+    transition: all var(--transition);
+    cursor: grab;
+}
+.selected-test-item:active {
+    cursor: grabbing;
+}
+.selected-test-item.dragging {
+    opacity: 0.5;
+    box-shadow: var(--shadow-md);
+}
+.selected-test-item.drag-over {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+.drag-handle {
+    color: var(--text-muted);
+    cursor: grab;
+    font-size: 1rem;
+    flex-shrink: 0;
+    padding: 0.25rem;
+}
+.drag-handle:active {
+    cursor: grabbing;
+}
+.selected-test-thumbs {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+}
+.selected-test-thumbs img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: 3px;
+    border: 1px solid var(--border-light);
+    background: var(--surface-1);
+}
+.selected-test-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.selected-test-order {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.selected-test-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+.selected-test-remove:hover {
+    color: var(--danger);
+    background: var(--danger-light);
+}
+
+/* --- Empty State for Test Picker --- */
+.test-picker-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-muted);
+    border: 2px dashed var(--border-light);
+    border-radius: var(--radius-md);
+}
+.test-picker-empty i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* --- Touch Overrides for Test Picker --- */
+@media (pointer: coarse) {
+    .test-picker-card {
+        min-height: 44px;
+        padding: 1rem;
+    }
+    .selected-test-item {
+        min-height: 52px;
+        padding: 0.75rem 1rem;
+    }
+    .selected-test-remove {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .drag-handle {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .test-compact-card {
+        min-height: 52px;
+    }
+}
+
+/* --- Responsive for Test Picker --- */
+@media (max-width: 420px) {
+    .test-picker-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -12,6 +12,9 @@ if (!can_access_admin_panel()) {
 $currentUserRole = get_user_role();
 $canManageUsers = can_manage_users();
 $canManageAssessments = can_manage_assessments();
+
+// Run migration (idempotent: extracts embedded tests into tests.json)
+require_once __DIR__ . '/migrate_tests.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -68,6 +71,33 @@ $canManageAssessments = can_manage_assessments();
                 });
             }
         }
+
+        function deleteTest(testId, testName) {
+            if (confirm(`Are you sure you want to delete the test "${testName}"? This action cannot be undone.`)) {
+                fetch('admin_delete_test.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        test_id: testId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Test deleted successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Delete error:', error);
+                    alert('Error deleting test: ' + error.message);
+                });
+            }
+        }
     </script>
 </head>
 <body>
@@ -99,52 +129,109 @@ $canManageAssessments = can_manage_assessments();
     <div class="tab-content" id="adminTabsContent">
         <!-- Assessments Tab -->
         <div class="tab-pane fade show active" id="assessments" role="tabpanel">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Assessments</h2>
-                <a href="admin_assessment.php" class="btn btn-modern-primary"><i class="fa-solid fa-plus me-1"></i> Create New</a>
-            </div>
             <?php
-            // List assessments from JSON
+            // Load tests and assessments
+            $testsFile = __DIR__ . '/assets/tests.json';
             $assessmentsFile = __DIR__ . '/assets/assessments.json';
-            $assessments = [];
-            if (file_exists($assessmentsFile)) {
-                $json = file_get_contents($assessmentsFile);
-                $allAssessments = json_decode($json, true) ?: [];
-                
-                // Filter assessments based on user role
-                if ($currentUserRole === 'test_creator') {
-                    // Test creators can see admin assessments (read-only) and their own assessments
-                    $assessments = $allAssessments;
-                } else {
-                    // Admins and site admins can see all assessments
-                    $assessments = $allAssessments;
-                }
-            }
+            $allTests = file_exists($testsFile) ? json_decode(file_get_contents($testsFile), true) : [];
+            $allAssessments = file_exists($assessmentsFile) ? json_decode(file_get_contents($assessmentsFile), true) : [];
             ?>
-            <?php if (empty($assessments)): ?>
+
+            <!-- Tests Sub-Section -->
+            <div class="d-flex justify-content-between align-items-center mb-3 mt-2">
+                <h3 class="sub-section-header mb-0"><i class="fa-solid fa-vial"></i> Tests</h3>
+                <a href="admin_test.php" class="btn btn-modern-primary btn-sm"><i class="fa-solid fa-plus me-1"></i> Create Test</a>
+            </div>
+            <?php if (empty($allTests)): ?>
+                <div class="alert alert-info text-center mb-4">No tests created yet. Create a test to get started.</div>
+            <?php else: ?>
+                <?php foreach ($allTests as $testId => $testData):
+                    $createdBy = $testData['created_by'] ?? 'admin';
+                    $isOwner = ($createdBy === $_SESSION['admin_user']);
+                    $canEdit = $canManageAssessments && ($isOwner || in_array($currentUserRole, ['admin', 'site_admin']));
+                    $canDelete = $canEdit;
+                    $leftImg = $testData['left_image'] ?? '';
+                    $centerImg = $testData['center_image'] ?? '';
+                    $rightImg = $testData['right_image'] ?? '';
+                ?>
+                <div class="test-compact-card">
+                    <div class="test-compact-thumbs">
+                        <?php if ($leftImg): ?>
+                            <img src="<?= htmlspecialchars($leftImg) ?>" alt="L">
+                        <?php else: ?>
+                            <div class="thumb-placeholder-sm">L</div>
+                        <?php endif; ?>
+                        <?php if ($centerImg): ?>
+                            <img src="<?= htmlspecialchars($centerImg) ?>" alt="C">
+                        <?php else: ?>
+                            <div class="thumb-placeholder-sm">C</div>
+                        <?php endif; ?>
+                        <?php if ($rightImg): ?>
+                            <img src="<?= htmlspecialchars($rightImg) ?>" alt="R">
+                        <?php else: ?>
+                            <div class="thumb-placeholder-sm">R</div>
+                        <?php endif; ?>
+                    </div>
+                    <span class="test-compact-name"><?= htmlspecialchars($testData['name'] ?? $testId) ?></span>
+                    <span class="badge-pill <?= $createdBy === 'admin' ? 'badge-admin' : 'badge-creator' ?>" style="font-size:0.65rem;">
+                        <?= htmlspecialchars($createdBy) ?>
+                    </span>
+                    <div class="test-compact-actions">
+                        <?php if ($canEdit): ?>
+                            <a href="admin_test.php?id=<?= urlencode($testId) ?>" class="btn-ghost" style="font-size:0.8rem;"><i class="fa-solid fa-pen-to-square me-1"></i>Edit</a>
+                        <?php else: ?>
+                            <a href="admin_test.php?id=<?= urlencode($testId) ?>" class="btn-ghost" style="font-size:0.8rem;"><i class="fa-solid fa-eye me-1"></i>View</a>
+                        <?php endif; ?>
+                        <?php if ($canDelete): ?>
+                            <button type="button" class="btn-ghost-danger" style="font-size:0.8rem;" onclick="deleteTest('<?= htmlspecialchars($testId) ?>', '<?= htmlspecialchars(addslashes($testData['name'] ?? $testId)) ?>')"><i class="fa-solid fa-trash-can me-1"></i>Delete</button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+
+            <hr style="margin:2rem 0 1.5rem;">
+
+            <!-- Assessments Sub-Section -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="sub-section-header mb-0"><i class="fa-solid fa-clipboard-list"></i> Assessments</h3>
+                <a href="admin_assessment.php" class="btn btn-modern-primary btn-sm"><i class="fa-solid fa-plus me-1"></i> Create Assessment</a>
+            </div>
+            <?php if (empty($allAssessments)): ?>
                 <div class="alert alert-info text-center">No assessments found.</div>
             <?php else:
-                foreach ($assessments as $id => $assessment):
+                foreach ($allAssessments as $id => $assessment):
                     $createdBy = $assessment['created_by'] ?? 'admin';
                     $isOwner = ($createdBy === $_SESSION['admin_user']);
                     $canEdit = $canManageAssessments && ($isOwner || in_array($currentUserRole, ['admin', 'site_admin']));
                     $canDelete = $canEdit;
-                    $test = isset($assessment['tests'][0]) ? $assessment['tests'][0] : [];
-                    $leftImg = $test['left_image'] ?? '';
-                    $centerImg = $test['center_image'] ?? '';
-                    $rightImg = $test['right_image'] ?? '';
-                    $leftSound = $test['left_sound'] ?? '';
-                    $centerSound = $test['center_sound'] ?? '';
-                    $rightSound = $test['right_sound'] ?? '';
+
+                    // Resolve first test for preview thumbnails
+                    $previewTest = [];
+                    if (isset($assessment['test_ids']) && is_array($assessment['test_ids']) && !empty($assessment['test_ids'])) {
+                        $firstTestId = $assessment['test_ids'][0];
+                        $previewTest = $allTests[$firstTestId] ?? [];
+                    } elseif (isset($assessment['tests'][0])) {
+                        $previewTest = $assessment['tests'][0];
+                    }
+                    $leftImg = $previewTest['left_image'] ?? '';
+                    $centerImg = $previewTest['center_image'] ?? '';
+                    $rightImg = $previewTest['right_image'] ?? '';
+
+                    // Test count
+                    $testCount = 0;
+                    if (isset($assessment['test_ids'])) {
+                        $testCount = count($assessment['test_ids']);
+                    } elseif (isset($assessment['tests'])) {
+                        $testCount = count($assessment['tests']);
+                    }
                 ?>
                 <div class="card-modern mb-3">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center gap-2">
                             <strong style="font-size:1.05rem;"><?= htmlspecialchars($assessment['name']) ?></strong>
-                            <?php
-                                $creatorBadge = $createdBy === 'admin' ? 'badge-admin' : 'badge-creator';
-                            ?>
-                            <span class="badge-pill <?= $creatorBadge ?>">
+                            <span class="test-count-badge"><?= $testCount ?> test<?= $testCount !== 1 ? 's' : '' ?></span>
+                            <span class="badge-pill <?= $createdBy === 'admin' ? 'badge-admin' : 'badge-creator' ?>">
                                 <?= htmlspecialchars($createdBy) ?>
                             </span>
                         </div>
@@ -163,13 +250,12 @@ $canManageAssessments = can_manage_assessments();
                         <div style="display:flex;gap:12px;">
                             <?php
                             $channels = [
-                                ['label' => 'Left', 'class' => 'channel-left', 'img' => $leftImg, 'sound' => $leftSound],
-                                ['label' => 'Center', 'class' => 'channel-center', 'img' => $centerImg, 'sound' => $centerSound],
-                                ['label' => 'Right', 'class' => 'channel-right', 'img' => $rightImg, 'sound' => $rightSound],
+                                ['label' => 'Left', 'class' => 'channel-left', 'img' => $leftImg],
+                                ['label' => 'Center', 'class' => 'channel-center', 'img' => $centerImg],
+                                ['label' => 'Right', 'class' => 'channel-right', 'img' => $rightImg],
                             ];
                             foreach ($channels as $ch):
                                 $imgName = $ch['img'] ? pathinfo($ch['img'], PATHINFO_FILENAME) : '';
-                                $audioName = $ch['sound'] ? pathinfo($ch['sound'], PATHINFO_FILENAME) : '';
                             ?>
                             <div class="channel-card <?= $ch['class'] ?>">
                                 <div class="channel-label"><?= $ch['label'] ?></div>
@@ -181,12 +267,6 @@ $canManageAssessments = can_manage_assessments();
                                             <div class="channel-thumb-placeholder"><?= $ch['label'][0] ?></div>
                                         <?php endif; ?>
                                         <div class="channel-img-name" title="<?= htmlspecialchars($imgName) ?>"><?= htmlspecialchars($imgName ?: '—') ?></div>
-                                    </div>
-                                    <div class="channel-audio">
-                                        <span class="channel-audio-name" title="<?= htmlspecialchars($audioName) ?>"><?= htmlspecialchars($audioName ?: '—') ?></span>
-                                        <?php if ($ch['sound']): ?>
-                                            <button type="button" class="btn-play" onclick="playAudio('<?= htmlspecialchars($ch['sound']) ?>')" title="Play <?= htmlspecialchars($audioName) ?>"><i class="fa-solid fa-play"></i></button>
-                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>

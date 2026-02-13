@@ -9,18 +9,25 @@ header('Content-Type: application/json');
 try {
     // Load assessments from JSON file
     $assessmentsFile = __DIR__ . '/assets/assessments.json';
-    
+
     if (!file_exists($assessmentsFile)) {
         throw new Exception('No assessments found');
     }
-    
+
     $json = file_get_contents($assessmentsFile);
     $assessments = json_decode($json, true);
-    
+
     if (!$assessments) {
         throw new Exception('Failed to load assessments');
     }
-    
+
+    // Load standalone tests (new format)
+    $testsFile = __DIR__ . '/assets/tests.json';
+    $allTests = [];
+    if (file_exists($testsFile)) {
+        $allTests = json_decode(file_get_contents($testsFile), true) ?: [];
+    }
+
     // Filter by selected IDs if provided
     $selectedIds = isset($_GET['ids']) ? explode(',', $_GET['ids']) : [];
     if (!empty($selectedIds)) {
@@ -36,24 +43,38 @@ try {
             'name' => $assessment['name'],
             'tests' => []
         ];
-        
+
+        // Resolve tests: support both new (test_ids) and old (embedded tests) formats
+        $testList = [];
+        if (isset($assessment['test_ids']) && is_array($assessment['test_ids'])) {
+            // New format: look up each test from tests.json
+            foreach ($assessment['test_ids'] as $testId) {
+                if (isset($allTests[$testId])) {
+                    $testList[] = $allTests[$testId];
+                }
+            }
+        } elseif (isset($assessment['tests']) && is_array($assessment['tests'])) {
+            // Old format: embedded test objects
+            $testList = $assessment['tests'];
+        }
+
         // Each test in the assessment becomes a test configuration
-        foreach ($assessment['tests'] as $index => $test) {
+        foreach ($testList as $index => $test) {
             $testConfig = [
                 'id' => $assessmentId . '_test_' . $index,
                 'name' => $assessment['name'],
                 'description' => 'Audio-visual matching test',
-                'type' => 'matching', // New type for admin-created tests
-                'entries' => 15, // Default number of entries
+                'type' => 'matching',
+                'entries' => 15,
                 'images' => [
-                    'left' => $test['left_image'],
-                    'center' => $test['center_image'], 
-                    'right' => $test['right_image']
+                    'left' => $test['left_image'] ?? '',
+                    'center' => $test['center_image'] ?? '',
+                    'right' => $test['right_image'] ?? ''
                 ],
                 'sounds' => [
-                    'left' => $test['left_sound'],
-                    'center' => $test['center_sound'],
-                    'right' => $test['right_sound']
+                    'left' => $test['left_sound'] ?? '',
+                    'center' => $test['center_sound'] ?? '',
+                    'right' => $test['right_sound'] ?? ''
                 ],
                 'feedback_images' => [
                     'correct' => $test['correct_image'] ?? '',
@@ -61,25 +82,25 @@ try {
                 ],
                 'zones' => ['Left', 'Center', 'Right']
             ];
-            
+
             $transformedAssessment['tests'][] = $testConfig;
         }
-        
+
         $transformedAssessments[] = $transformedAssessment;
     }
-    
+
     // Clean any output buffer
     ob_end_clean();
-    
+
     echo json_encode([
         'success' => true,
         'assessments' => $transformedAssessments
     ]);
-    
+
 } catch (Exception $e) {
     // Clean any output buffer
     ob_end_clean();
-    
+
     http_response_code(500);
     echo json_encode([
         'success' => false,

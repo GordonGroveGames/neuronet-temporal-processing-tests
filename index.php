@@ -12,6 +12,13 @@ if (file_exists($assessmentsFile)) {
     $assessments = json_decode($json, true) ?: [];
 }
 
+// Load standalone tests for resolving test_ids
+$testsFile = __DIR__ . '/assets/tests.json';
+$allTests = [];
+if (file_exists($testsFile)) {
+    $allTests = json_decode(file_get_contents($testsFile), true) ?: [];
+}
+
 // If only one assessment, skip straight to test
 if (count($assessments) === 1) {
     $id = array_key_first($assessments);
@@ -176,7 +183,14 @@ if (count($assessments) === 1) {
 
         <div class="assessment-grid">
             <?php foreach ($assessments as $id => $assessment):
-                $test = $assessment['tests'][0] ?? [];
+                // Resolve first test: support both test_ids (new) and embedded tests (old)
+                $test = [];
+                if (isset($assessment['test_ids']) && is_array($assessment['test_ids']) && !empty($assessment['test_ids'])) {
+                    $firstTestId = $assessment['test_ids'][0];
+                    $test = $allTests[$firstTestId] ?? [];
+                } elseif (isset($assessment['tests'][0])) {
+                    $test = $assessment['tests'][0];
+                }
                 $leftImg = $test['left_image'] ?? '';
                 $centerImg = $test['center_image'] ?? '';
                 $rightImg = $test['right_image'] ?? '';
