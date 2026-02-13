@@ -633,9 +633,15 @@ if (!$userInfo) {
                 try {
                     const params = new URLSearchParams(window.location.search);
                     const selectedIds = params.get('assessments') || '';
-                    const fetchUrl = selectedIds
-                        ? 'get_assessments.php?ids=' + encodeURIComponent(selectedIds)
-                        : 'get_assessments.php';
+                    const singleTestId = params.get('test_id') || '';
+                    let fetchUrl;
+                    if (singleTestId) {
+                        fetchUrl = 'get_assessments.php?test_id=' + encodeURIComponent(singleTestId);
+                    } else if (selectedIds) {
+                        fetchUrl = 'get_assessments.php?ids=' + encodeURIComponent(selectedIds);
+                    } else {
+                        fetchUrl = 'get_assessments.php';
+                    }
                     const response = await fetch(fetchUrl);
                     const data = await response.json();
                     

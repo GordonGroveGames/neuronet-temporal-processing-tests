@@ -22,6 +22,60 @@ function sendJSON($data) {
     exit;
 }
 
+/**
+ * Check if a file path is referenced by any test in tests.json.
+ * Returns true if the file is in use, false otherwise.
+ */
+function isFileInUse($filePath) {
+    $testsFile = __DIR__ . '/assets/tests.json';
+    if (!file_exists($testsFile)) return false;
+
+    $tests = json_decode(file_get_contents($testsFile), true) ?: [];
+    $assetFields = ['left_image', 'center_image', 'right_image', 'left_sound', 'center_sound', 'right_sound', 'correct_image', 'incorrect_image'];
+
+    foreach ($tests as $test) {
+        foreach ($assetFields as $field) {
+            if (isset($test[$field]) && $test[$field] === $filePath) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Resolve naming conflict for a file:
+ * - If file doesn't exist: use original name
+ * - If file exists but is NOT in use by any test: overwrite (return original name)
+ * - If file exists AND is in use: append _2, _3, etc. until unique
+ */
+function resolveFilename($targetDir, $originalName, $relativePrefix) {
+    $targetPath = $targetDir . $originalName;
+
+    if (!file_exists($targetPath)) {
+        return $originalName;
+    }
+
+    // File exists — check if it's referenced by any test
+    $relativePath = $relativePrefix . $originalName;
+    if (!isFileInUse($relativePath)) {
+        // Not in use by any test — overwrite is safe
+        return $originalName;
+    }
+
+    // In use — generate a unique name
+    $pathInfo = pathinfo($originalName);
+    $baseName = $pathInfo['filename'];
+    $ext = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
+    $counter = 2;
+
+    while (file_exists($targetDir . $baseName . '_' . $counter . $ext)) {
+        $counter++;
+    }
+
+    return $baseName . '_' . $counter . $ext;
+}
+
 $uploadDir = __DIR__ . '/assets/uploads/';
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0777, true);
@@ -31,33 +85,27 @@ $response = ['success' => false];
 
 try {
     $uploadedFiles = [];
-    
+
     // Handle image files
     if (isset($_FILES['image_files'])) {
         foreach ($_FILES['image_files']['tmp_name'] as $key => $tmpName) {
             if (!empty($tmpName) && is_uploaded_file($tmpName)) {
                 $originalName = $_FILES['image_files']['name'][$key];
                 $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-                
+
                 // Validate image file type
                 if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
                     throw new Exception("Invalid image file type: $originalName");
                 }
-                
-                // Validate filename is safe (no path traversal, special chars that could cause issues)
+
+                // Validate filename is safe
                 if (strpos($originalName, '..') !== false || strpos($originalName, '/') !== false || strpos($originalName, '\\') !== false) {
                     throw new Exception("Invalid filename: $originalName contains unsafe characters");
                 }
-                
-                // Use original filename, check for duplicates
-                $safeName = $originalName;
+
+                $safeName = resolveFilename($uploadDir, $originalName, 'assets/uploads/');
                 $targetPath = $uploadDir . $safeName;
-                
-                // Check if file already exists
-                if (file_exists($targetPath)) {
-                    throw new Exception("File '$originalName' already exists. Please rename the file or delete the existing one.");
-                }
-                
+
                 if (move_uploaded_file($tmpName, $targetPath)) {
                     $uploadedFiles[] = $safeName;
                 } else {
@@ -66,33 +114,27 @@ try {
             }
         }
     }
-    
+
     // Handle audio files
     if (isset($_FILES['audio_files'])) {
         foreach ($_FILES['audio_files']['tmp_name'] as $key => $tmpName) {
             if (!empty($tmpName) && is_uploaded_file($tmpName)) {
                 $originalName = $_FILES['audio_files']['name'][$key];
                 $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-                
+
                 // Validate audio file type
                 if (!in_array($ext, ['mp3', 'wav', 'ogg', 'm4a'])) {
                     throw new Exception("Invalid audio file type: $originalName");
                 }
-                
-                // Validate filename is safe (no path traversal, special chars that could cause issues)
+
+                // Validate filename is safe
                 if (strpos($originalName, '..') !== false || strpos($originalName, '/') !== false || strpos($originalName, '\\') !== false) {
                     throw new Exception("Invalid filename: $originalName contains unsafe characters");
                 }
-                
-                // Use original filename, check for duplicates
-                $safeName = $originalName;
+
+                $safeName = resolveFilename($uploadDir, $originalName, 'assets/uploads/');
                 $targetPath = $uploadDir . $safeName;
-                
-                // Check if file already exists
-                if (file_exists($targetPath)) {
-                    throw new Exception("File '$originalName' already exists. Please rename the file or delete the existing one.");
-                }
-                
+
                 if (move_uploaded_file($tmpName, $targetPath)) {
                     $uploadedFiles[] = $safeName;
                 } else {
@@ -101,7 +143,7 @@ try {
             }
         }
     }
-    
+
     // Handle feedback image files (legacy - uploads to feedback/ root)
     if (isset($_FILES['feedback_image_files'])) {
         $feedbackUploadDir = __DIR__ . '/assets/uploads/feedback/';
@@ -114,24 +156,16 @@ try {
                 $originalName = $_FILES['feedback_image_files']['name'][$key];
                 $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-                // Validate image file type
                 if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'bmp'])) {
                     throw new Exception("Invalid feedback image file type: $originalName");
                 }
 
-                // Validate filename is safe (no path traversal, special chars that could cause issues)
                 if (strpos($originalName, '..') !== false || strpos($originalName, '/') !== false || strpos($originalName, '\\') !== false) {
                     throw new Exception("Invalid filename: $originalName contains unsafe characters");
                 }
 
-                // Use original filename, check for duplicates
-                $safeName = $originalName;
+                $safeName = resolveFilename($feedbackUploadDir, $originalName, 'assets/uploads/feedback/');
                 $targetPath = $feedbackUploadDir . $safeName;
-
-                // Check if file already exists
-                if (file_exists($targetPath)) {
-                    throw new Exception("Feedback image file '$originalName' already exists. Please rename the file or delete the existing one.");
-                }
 
                 if (move_uploaded_file($tmpName, $targetPath)) {
                     $uploadedFiles[] = $safeName;
@@ -162,12 +196,8 @@ try {
                     throw new Exception("Invalid filename: $originalName contains unsafe characters");
                 }
 
-                $safeName = $originalName;
+                $safeName = resolveFilename($correctUploadDir, $originalName, 'assets/uploads/feedback/correct/');
                 $targetPath = $correctUploadDir . $safeName;
-
-                if (file_exists($targetPath)) {
-                    throw new Exception("Correct image file '$originalName' already exists. Please rename the file or delete the existing one.");
-                }
 
                 if (move_uploaded_file($tmpName, $targetPath)) {
                     $uploadedFiles[] = $safeName;
@@ -198,12 +228,8 @@ try {
                     throw new Exception("Invalid filename: $originalName contains unsafe characters");
                 }
 
-                $safeName = $originalName;
+                $safeName = resolveFilename($incorrectUploadDir, $originalName, 'assets/uploads/feedback/incorrect/');
                 $targetPath = $incorrectUploadDir . $safeName;
-
-                if (file_exists($targetPath)) {
-                    throw new Exception("Incorrect image file '$originalName' already exists. Please rename the file or delete the existing one.");
-                }
 
                 if (move_uploaded_file($tmpName, $targetPath)) {
                     $uploadedFiles[] = $safeName;
@@ -213,17 +239,17 @@ try {
             }
         }
     }
-    
+
     if (empty($uploadedFiles)) {
         throw new Exception("No valid files were uploaded");
     }
-    
+
     $response['success'] = true;
     $response['message'] = count($uploadedFiles) . ' file(s) uploaded successfully';
     $response['files'] = $uploadedFiles;
-    
+
     sendJSON($response);
-    
+
 } catch (Exception $e) {
     $response['error'] = $e->getMessage();
     sendJSON($response);

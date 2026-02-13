@@ -246,32 +246,47 @@ require_once __DIR__ . '/migrate_tests.php';
                             <?php endif; ?>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div style="display:flex;gap:12px;">
-                            <?php
-                            $channels = [
-                                ['label' => 'Left', 'class' => 'channel-left', 'img' => $leftImg],
-                                ['label' => 'Center', 'class' => 'channel-center', 'img' => $centerImg],
-                                ['label' => 'Right', 'class' => 'channel-right', 'img' => $rightImg],
-                            ];
-                            foreach ($channels as $ch):
-                                $imgName = $ch['img'] ? pathinfo($ch['img'], PATHINFO_FILENAME) : '';
-                            ?>
-                            <div class="channel-card <?= $ch['class'] ?>">
-                                <div class="channel-label"><?= $ch['label'] ?></div>
-                                <div class="channel-content">
-                                    <div class="channel-media">
-                                        <?php if ($ch['img']): ?>
-                                            <img src="<?= htmlspecialchars($ch['img']) ?>" class="channel-thumb" alt="<?= htmlspecialchars($imgName) ?>">
-                                        <?php else: ?>
-                                            <div class="channel-thumb-placeholder"><?= $ch['label'][0] ?></div>
+                    <div class="card-body" style="padding:0.75rem 1rem;">
+                        <?php
+                        // Resolve all tests for this assessment
+                        $assessmentTests = [];
+                        if (isset($assessment['test_ids']) && is_array($assessment['test_ids'])) {
+                            foreach ($assessment['test_ids'] as $idx => $tid) {
+                                if (isset($allTests[$tid])) {
+                                    $assessmentTests[] = $allTests[$tid];
+                                }
+                            }
+                        } elseif (isset($assessment['tests']) && is_array($assessment['tests'])) {
+                            $assessmentTests = $assessment['tests'];
+                        }
+                        ?>
+                        <?php if (empty($assessmentTests)): ?>
+                            <div class="text-muted" style="font-size:0.85rem;"><i class="fa-solid fa-info-circle me-1"></i>No tests assigned</div>
+                        <?php else: ?>
+                            <ol style="margin:0;padding-left:1.25rem;list-style:decimal;">
+                                <?php foreach ($assessmentTests as $idx => $aTest):
+                                    $tName = $aTest['name'] ?? ('Test ' . ($idx + 1));
+                                    $tLeft = $aTest['left_image'] ?? '';
+                                    $tCenter = $aTest['center_image'] ?? '';
+                                    $tRight = $aTest['right_image'] ?? '';
+                                ?>
+                                <li style="padding:0.3rem 0;font-size:0.88rem;display:flex;align-items:center;gap:0.5rem;">
+                                    <span class="test-compact-thumbs" style="gap:2px;">
+                                        <?php if ($tLeft): ?>
+                                            <img src="<?= htmlspecialchars($tLeft) ?>" alt="L" style="width:28px;height:28px;object-fit:contain;border-radius:3px;border:1px solid var(--border-light);background:var(--surface-1);">
                                         <?php endif; ?>
-                                        <div class="channel-img-name" title="<?= htmlspecialchars($imgName) ?>"><?= htmlspecialchars($imgName ?: '—') ?></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
+                                        <?php if ($tCenter): ?>
+                                            <img src="<?= htmlspecialchars($tCenter) ?>" alt="C" style="width:28px;height:28px;object-fit:contain;border-radius:3px;border:1px solid var(--border-light);background:var(--surface-1);">
+                                        <?php endif; ?>
+                                        <?php if ($tRight): ?>
+                                            <img src="<?= htmlspecialchars($tRight) ?>" alt="R" style="width:28px;height:28px;object-fit:contain;border-radius:3px;border:1px solid var(--border-light);background:var(--surface-1);">
+                                        <?php endif; ?>
+                                    </span>
+                                    <span style="color:var(--text-primary);font-weight:500;"><?= htmlspecialchars($tName) ?></span>
+                                </li>
+                                <?php endforeach; ?>
+                            </ol>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endforeach;

@@ -83,6 +83,11 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
     <link rel="stylesheet" href="assets/css/admin-styles.css">
     <style>
         .card-modern:hover { transform: none; }
+        .upload-slot.drag-over {
+            border-color: var(--primary) !important;
+            background: var(--primary-light) !important;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -462,12 +467,13 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
 
         let html = '<div class="upload-slot' + (hasFile ? ' has-file' : '') + '"';
         html += ' data-type="' + type + '" data-position="' + position + '"';
-        html += ' onclick="triggerUpload(this)">';
+        html += ' onclick="triggerUpload(this)"';
+        html += ' ondragover="onSlotDragOver(event)" ondragleave="onSlotDragLeave(event)" ondrop="onSlotDrop(event)">';
         html += '<input type="file" accept="' + accept + '" style="display:none;" onchange="handleSlotUpload(this)">';
 
         html += '<div class="upload-slot-empty"' + (hasFile ? ' style="display:none;"' : '') + '>';
         html += '<i class="fa-solid ' + icon + '"></i>';
-        html += '<span>' + label + '</span>';
+        html += '<span>' + label + ' or drag here</span>';
         html += '</div>';
 
         html += '<div class="upload-slot-filled"' + (!hasFile ? ' style="display:none;"' : '') + '>';
@@ -513,11 +519,50 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
         if (fileInput) fileInput.click();
     }
 
-    function handleSlotUpload(fileInput) {
-        const file = fileInput.files[0];
-        if (!file) return;
+    // Drag-and-drop handlers for upload slots
+    function onSlotDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+        const slot = e.target.closest('.upload-slot');
+        if (slot) slot.classList.add('drag-over');
+    }
 
-        const slot = fileInput.closest('.upload-slot');
+    function onSlotDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const slot = e.target.closest('.upload-slot');
+        if (slot) slot.classList.remove('drag-over');
+    }
+
+    function onSlotDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const slot = e.target.closest('.upload-slot');
+        if (!slot) return;
+        slot.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        const type = slot.dataset.type; // 'image' or 'audio'
+
+        // Validate file type
+        if (type === 'image' && !file.type.startsWith('image/')) {
+            alert('Please drop an image file here.');
+            return;
+        }
+        if (type === 'audio' && !file.type.startsWith('audio/')) {
+            alert('Please drop an audio file here.');
+            return;
+        }
+
+        // Upload the dropped file using the same handler
+        uploadFileToSlot(slot, file);
+    }
+
+    function uploadFileToSlot(slot, file) {
         const type = slot.dataset.type;
         const position = slot.dataset.position;
         const formKey = type === 'image' ? 'image_files[]' : 'audio_files[]';
@@ -560,15 +605,21 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
                     setTimeout(() => slot.classList.remove('has-error'), 3000);
                     alert('Upload failed: ' + (data.error || 'Unknown error'));
                 }
-                fileInput.value = '';
             })
             .catch(err => {
                 slot.classList.remove('uploading');
                 slot.classList.add('has-error');
                 setTimeout(() => slot.classList.remove('has-error'), 3000);
                 alert('Upload error: ' + err.message);
-                fileInput.value = '';
             });
+    }
+
+    function handleSlotUpload(fileInput) {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const slot = fileInput.closest('.upload-slot');
+        uploadFileToSlot(slot, file);
+        fileInput.value = '';
     }
 
     // ============================================

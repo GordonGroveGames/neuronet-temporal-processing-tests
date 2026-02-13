@@ -28,6 +28,47 @@ try {
         $allTests = json_decode(file_get_contents($testsFile), true) ?: [];
     }
 
+    // Support single test_id param: wrap a standalone test as a pseudo-assessment
+    if (isset($_GET['test_id']) && !empty($_GET['test_id'])) {
+        $singleTestId = $_GET['test_id'];
+        if (isset($allTests[$singleTestId])) {
+            $singleTest = $allTests[$singleTestId];
+            $testConfig = [
+                'id' => $singleTestId,
+                'name' => $singleTest['name'] ?? 'Test',
+                'description' => 'Audio-visual matching test',
+                'type' => 'matching',
+                'entries' => 15,
+                'images' => [
+                    'left' => $singleTest['left_image'] ?? '',
+                    'center' => $singleTest['center_image'] ?? '',
+                    'right' => $singleTest['right_image'] ?? ''
+                ],
+                'sounds' => [
+                    'left' => $singleTest['left_sound'] ?? '',
+                    'center' => $singleTest['center_sound'] ?? '',
+                    'right' => $singleTest['right_sound'] ?? ''
+                ],
+                'feedback_images' => [
+                    'correct' => $singleTest['correct_image'] ?? '',
+                    'incorrect' => $singleTest['incorrect_image'] ?? ''
+                ],
+                'zones' => ['Left', 'Center', 'Right']
+            ];
+
+            ob_end_clean();
+            echo json_encode([
+                'success' => true,
+                'assessments' => [[
+                    'id' => 'single_test_' . $singleTestId,
+                    'name' => $singleTest['name'] ?? 'Test',
+                    'tests' => [$testConfig]
+                ]]
+            ]);
+            exit;
+        }
+    }
+
     // Filter by selected IDs if provided
     $selectedIds = isset($_GET['ids']) ? explode(',', $_GET['ids']) : [];
     if (!empty($selectedIds)) {
