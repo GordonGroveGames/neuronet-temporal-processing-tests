@@ -304,13 +304,13 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
             right_sound: <?= json_encode($test['right_sound']) ?>
         },
         correctImage: <?= json_encode(
-            $editing
-                ? ($test['correct_image'] ?? '')
+            $editing && !empty($test['correct_image'])
+                ? $test['correct_image']
                 : $defaultCorrectImage
         ) ?>,
         incorrectImage: <?= json_encode(
-            $editing
-                ? ($test['incorrect_image'] ?? '')
+            $editing && !empty($test['incorrect_image'])
+                ? $test['incorrect_image']
                 : $defaultIncorrectImage
         ) ?>
     };
