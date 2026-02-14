@@ -47,6 +47,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $saveId = $editing ? $id : uniqid('test_', true);
     $allTests[$saveId] = $testData;
 
+    // Handle "make default for new tests" checkbox
+    if (!empty($_POST['set_default_new'])) {
+        $feedbackDefaultsFile = __DIR__ . '/assets/feedback_defaults.json';
+        $newDefaults = [
+            'correct_image' => $testData['correct_image'],
+            'incorrect_image' => $testData['incorrect_image']
+        ];
+        file_put_contents($feedbackDefaultsFile, json_encode($newDefaults, JSON_PRETTY_PRINT));
+    }
+
+    // Handle "apply to all existing tests" checkbox
+    if (!empty($_POST['set_default_all'])) {
+        foreach ($allTests as $tid => &$t) {
+            if ($tid === $saveId) continue; // skip the current test being saved
+            $t['correct_image'] = $testData['correct_image'];
+            $t['incorrect_image'] = $testData['incorrect_image'];
+        }
+        unset($t);
+    }
+
     file_put_contents($testsFile, json_encode($allTests, JSON_PRETTY_PRINT));
     header('Location: admin_panel.php');
     exit();
@@ -59,17 +79,13 @@ $test = $editing ? $allTests[$id] : [
     'correct_image' => '', 'incorrect_image' => ''
 ];
 
-// Determine default feedback images
-$defaultCorrectImage = '';
-$defaultIncorrectImage = '';
-$correctDir = __DIR__ . '/assets/uploads/feedback/correct/';
-$incorrectDir = __DIR__ . '/assets/uploads/feedback/incorrect/';
-if (file_exists($correctDir . 'Full Milk Bottle.bmp')) {
-    $defaultCorrectImage = 'assets/uploads/feedback/correct/Full Milk Bottle.bmp';
-}
-if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
-    $defaultIncorrectImage = 'assets/uploads/feedback/incorrect/Empty Milk Bottle.bmp';
-}
+// Determine default feedback images from config
+$feedbackDefaultsFile = __DIR__ . '/assets/feedback_defaults.json';
+$feedbackDefaults = file_exists($feedbackDefaultsFile)
+    ? json_decode(file_get_contents($feedbackDefaultsFile), true) ?: []
+    : [];
+$defaultCorrectImage = $feedbackDefaults['correct_image'] ?? '';
+$defaultIncorrectImage = $feedbackDefaults['incorrect_image'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -242,6 +258,24 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
                             </div>
                         </div>
                     </div>
+
+                    <!-- Default checkboxes (shown only after uploading custom feedback images) -->
+                    <div id="feedbackDefaultOptions" style="display:none; margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border-light);">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="chkDefaultNew" onchange="onDefaultNewChanged()">
+                            <label class="form-check-label" for="chkDefaultNew" style="font-size:0.9rem;">
+                                Make these the default images for all new tests
+                            </label>
+                        </div>
+                        <div id="defaultAllWrapper" style="display:none; margin-left:1.5rem;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="chkDefaultAll">
+                                <label class="form-check-label" for="chkDefaultAll" style="font-size:0.9rem;">
+                                    Apply to all existing tests (overwriting any custom images)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -268,6 +302,8 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
                 <input type="hidden" name="right_sound" id="formRightSound">
                 <input type="hidden" name="correct_image" id="formCorrectImage">
                 <input type="hidden" name="incorrect_image" id="formIncorrectImage">
+                <input type="hidden" name="set_default_new" id="formSetDefaultNew" value="">
+                <input type="hidden" name="set_default_all" id="formSetDefaultAll" value="">
             </form>
         </div>
     </div>
@@ -312,7 +348,9 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
             $editing && !empty($test['incorrect_image'])
                 ? $test['incorrect_image']
                 : $defaultIncorrectImage
-        ) ?>
+        ) ?>,
+        defaultCorrectImage: <?= json_encode($defaultCorrectImage) ?>,
+        defaultIncorrectImage: <?= json_encode($defaultIncorrectImage) ?>
     };
 
     let currentAudio = null;
@@ -628,6 +666,7 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
     function renderFeedbackStep() {
         populateFeedbackSlot('feedbackCorrectSlot', wizardState.correctImage);
         populateFeedbackSlot('feedbackIncorrectSlot', wizardState.incorrectImage);
+        updateFeedbackDefaultOptions();
     }
 
     function populateFeedbackSlot(slotId, path) {
@@ -684,6 +723,7 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
                     filled.style.display = 'flex';
                     filled.querySelector('.upload-slot-thumb').src = fullPath;
                     filled.querySelector('.upload-slot-filename').textContent = data.files[0];
+                    updateFeedbackDefaultOptions();
                 } else {
                     slot.classList.add('has-error');
                     setTimeout(() => slot.classList.remove('has-error'), 3000);
@@ -707,6 +747,33 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
         } else {
             wizardState.incorrectImage = '';
             populateFeedbackSlot('feedbackIncorrectSlot', '');
+        }
+        updateFeedbackDefaultOptions();
+    }
+
+    // Show/hide the "make default" checkboxes based on whether feedback images differ from defaults
+    function updateFeedbackDefaultOptions() {
+        const correctChanged = wizardState.correctImage && wizardState.correctImage !== wizardState.defaultCorrectImage;
+        const incorrectChanged = wizardState.incorrectImage && wizardState.incorrectImage !== wizardState.defaultIncorrectImage;
+        const hasCustom = correctChanged || incorrectChanged;
+
+        const optionsDiv = document.getElementById('feedbackDefaultOptions');
+        if (optionsDiv) {
+            optionsDiv.style.display = hasCustom ? '' : 'none';
+            if (!hasCustom) {
+                // Reset checkboxes when hidden
+                document.getElementById('chkDefaultNew').checked = false;
+                document.getElementById('chkDefaultAll').checked = false;
+                document.getElementById('defaultAllWrapper').style.display = 'none';
+            }
+        }
+    }
+
+    function onDefaultNewChanged() {
+        const checked = document.getElementById('chkDefaultNew').checked;
+        document.getElementById('defaultAllWrapper').style.display = checked ? '' : 'none';
+        if (!checked) {
+            document.getElementById('chkDefaultAll').checked = false;
         }
     }
 
@@ -797,6 +864,8 @@ if (file_exists($incorrectDir . 'Empty Milk Bottle.bmp')) {
         document.getElementById('formRightSound').value = t.right_sound;
         document.getElementById('formCorrectImage').value = wizardState.correctImage;
         document.getElementById('formIncorrectImage').value = wizardState.incorrectImage;
+        document.getElementById('formSetDefaultNew').value = document.getElementById('chkDefaultNew').checked ? '1' : '';
+        document.getElementById('formSetDefaultAll').value = document.getElementById('chkDefaultAll').checked ? '1' : '';
     }
 
     function submitWizard() {
