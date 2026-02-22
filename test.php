@@ -478,41 +478,50 @@ if (!$userInfo) {
             }
         }
         
-        /* Click to Start Overlay */
-        .countdown-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+        /* Pre-start buttons (shown in score-container before test begins) */
+        .score-container.pre-start-mode {
+            pointer-events: auto;
+            touch-action: auto;
+        }
+        .pre-start-area {
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
-            touch-action: manipulation;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
+            gap: 1rem;
+            padding: 1rem 0;
         }
-        
-        .countdown-content {
-            text-align: center;
+        .btn-start {
+            font-size: 1.25rem;
+            padding: 16px 48px;
+            background: var(--success, #28a745);
+            border-color: #218838;
         }
-        
-        .countdown-number {
-            font-size: 80px;
-            font-weight: bold;
-            color: #28a745;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            transition: transform 0.2s ease;
-            cursor: pointer;
-            touch-action: manipulation;
+        .btn-start:hover {
+            background: #218838;
         }
-        
-        .countdown-number:hover {
-            transform: scale(1.05);
-            color: #34ce57;
+        .btn-hear-sounds {
+            font-size: 1.25rem;
+            padding: 16px 36px;
+            background: var(--primary);
+            border-color: var(--primary-dark);
+        }
+        .btn-hear-sounds:hover {
+            background: var(--primary-dark);
+        }
+        .btn-hear-sounds:disabled {
+            background: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+        @media (max-width: 768px) {
+            .pre-start-area {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .btn-start, .btn-hear-sounds {
+                width: 100%;
+                font-size: 1.1rem;
+                padding: 14px 24px;
+            }
         }
 
         /* Navbar overrides for test page */
@@ -557,13 +566,6 @@ if (!$userInfo) {
     </nav>
 
     <div class="test-container">
-        <!-- Click to Start Overlay -->
-        <div id="countdownOverlay" class="countdown-overlay" style="display: none;">
-            <div class="countdown-content">
-                <div id="countdownNumber" class="countdown-number">Click to Start</div>
-            </div>
-        </div>
-
         <!-- Test Screen -->
         <div id="testScreen" class="screen">
             <div class="test-header">
@@ -585,8 +587,16 @@ if (!$userInfo) {
                 </div>
             </div>
             
-            <div class="score-container">
-                <div class="score-bar" id="scoreBar">
+            <div class="score-container" id="scoreContainer">
+                <div class="pre-start-area" id="preStartArea">
+                    <button type="button" class="btn btn-start" id="btnStart">
+                        <i class="fa-solid fa-play me-2"></i> Start
+                    </button>
+                    <button type="button" class="btn btn-hear-sounds" id="btnHearSounds">
+                        <i class="fa-solid fa-volume-high me-2"></i> Hear the Sounds
+                    </button>
+                </div>
+                <div class="score-bar" id="scoreBar" style="display:none;">
                     <!-- Score indicators will be added here -->
                 </div>
             </div>
@@ -622,10 +632,12 @@ if (!$userInfo) {
             // DOM Elements
             const testScreen = document.getElementById('testScreen');
             const resultsScreen = document.getElementById('resultsScreen');
-            const countdownOverlay = document.getElementById('countdownOverlay');
-            const countdownNumber = document.getElementById('countdownNumber');
             const testSections = document.querySelectorAll('.test-section');
             const scoreBar = document.getElementById('scoreBar');
+            const scoreContainer = document.getElementById('scoreContainer');
+            const preStartArea = document.getElementById('preStartArea');
+            const btnStart = document.getElementById('btnStart');
+            const btnHearSounds = document.getElementById('btnHearSounds');
             const progressText = document.getElementById('progressText');
             const testResults = document.getElementById('testResults');
             const finalResults = document.getElementById('finalResults');
@@ -735,9 +747,7 @@ if (!$userInfo) {
                     currentAudio.currentTime = 0;
                     currentAudio = null;
                 }
-
-                // Hide the countdown overlay if visible
-                countdownOverlay.style.display = 'none';
+                previewPlaying = false;
 
                 // Reset all test state — discard partial results
                 currentTestIndex = 0;
@@ -759,6 +769,23 @@ if (!$userInfo) {
                 // Show the navbar
                 testNavbar.style.display = '';
                 document.body.classList.add('has-navbar');
+
+                // Pre-start button handlers
+                btnStart.addEventListener('click', function() {
+                    if (previewPlaying) return;
+                    // Stop any preview audio
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio.currentTime = 0;
+                        currentAudio = null;
+                    }
+                    hidePreStart();
+                    startTrial();
+                });
+
+                btnHearSounds.addEventListener('click', function() {
+                    playSoundsPreview();
+                });
 
                 // Set up event listeners — touch + click with double-fire guard
                 testSections.forEach(section => {
@@ -783,7 +810,7 @@ if (!$userInfo) {
 
                 // Prevent context menu on long-press (image save dialog)
                 document.addEventListener('contextmenu', function(e) {
-                    if (e.target.closest('.test-area') || e.target.closest('.score-container') || e.target.closest('.countdown-overlay')) {
+                    if (e.target.closest('.test-area') || e.target.closest('.score-container')) {
                         e.preventDefault();
                     }
                 });
@@ -843,38 +870,85 @@ if (!$userInfo) {
                 // Preload audio for faster playback
                 preloadTestAudio();
                 
-                // Show test screen
+                // Show test screen with pre-start buttons
                 showScreen('test');
-                
-                // Show click to start overlay
-                showClickToStart();
+                showPreStart();
             }
             
-            // Show click to start overlay
-            function showClickToStart() {
-                countdownOverlay.style.display = 'flex';
-                countdownNumber.textContent = 'Click to Start';
-                countdownNumber.className = 'countdown-number';
+            // Show pre-start buttons (Start + Hear the Sounds)
+            function showPreStart() {
+                // Show buttons area, hide score bar
+                preStartArea.style.display = '';
+                scoreBar.style.display = 'none';
+                scoreContainer.classList.add('pre-start-mode');
+                btnStart.disabled = false;
+                btnHearSounds.disabled = false;
+            }
 
-                // Touch + click handler with double-fire guard
-                let countdownTouchHandled = false;
+            // Transition from pre-start to active test
+            function hidePreStart() {
+                preStartArea.style.display = 'none';
+                scoreBar.style.display = '';
+                scoreContainer.classList.remove('pre-start-mode');
+            }
 
-                function handleCountdownStart(e) {
-                    if (e.type === 'touchstart') {
-                        e.preventDefault();
-                        countdownTouchHandled = true;
-                        setTimeout(() => { countdownTouchHandled = false; }, 400);
+            // Play each sound in sequence: Left, Center, Right with 500ms gaps
+            let previewPlaying = false;
+            function playSoundsPreview() {
+                if (!currentTest || !currentTest.sounds || previewPlaying) return;
+
+                previewPlaying = true;
+                btnHearSounds.disabled = true;
+                btnStart.disabled = true;
+
+                const sounds = [
+                    currentTest.sounds.left,
+                    currentTest.sounds.center,
+                    currentTest.sounds.right
+                ].filter(Boolean);
+
+                let index = 0;
+
+                function playNext() {
+                    if (index >= sounds.length) {
+                        previewPlaying = false;
+                        btnHearSounds.disabled = false;
+                        btnStart.disabled = false;
+                        return;
                     }
-                    if (e.type === 'click' && countdownTouchHandled) return;
 
-                    countdownOverlay.style.display = 'none';
-                    countdownOverlay.removeEventListener('touchstart', handleCountdownStart);
-                    countdownOverlay.removeEventListener('click', handleCountdownStart);
-                    startTrial();
+                    const url = sounds[index];
+                    index++;
+
+                    // Stop any current audio
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        currentAudio.currentTime = 0;
+                    }
+
+                    let audio = preloadedAudio[url];
+                    if (!audio) {
+                        audio = new Audio(url);
+                        audio.volume = 0.7;
+                        audio.preload = 'auto';
+                        preloadedAudio[url] = audio;
+                    }
+                    audio.currentTime = 0;
+                    audio.volume = 0.7;
+                    currentAudio = audio;
+
+                    audio.play().then(() => {
+                        // Wait for audio to end, then 500ms delay before next
+                        audio.onended = function() {
+                            setTimeout(playNext, 500);
+                        };
+                    }).catch(() => {
+                        // If play fails, move to next after 500ms
+                        setTimeout(playNext, 500);
+                    });
                 }
 
-                countdownOverlay.addEventListener('touchstart', handleCountdownStart, { passive: false });
-                countdownOverlay.addEventListener('click', handleCountdownStart);
+                playNext();
             }
             
             // Setup the test display with images and prepare sounds
