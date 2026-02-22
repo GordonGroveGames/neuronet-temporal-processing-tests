@@ -869,6 +869,11 @@ $defaultIncorrectImage = $feedbackDefaults['incorrect_image'] ?? '';
     }
 
     function submitWizard() {
+        // Re-capture checkbox states at submit time (user may have toggled after renderReview)
+        document.getElementById('formSetDefaultNew').value = document.getElementById('chkDefaultNew').checked ? '1' : '';
+        document.getElementById('formSetDefaultAll').value = document.getElementById('chkDefaultAll').checked ? '1' : '';
+        document.getElementById('formCorrectImage').value = wizardState.correctImage;
+        document.getElementById('formIncorrectImage').value = wizardState.incorrectImage;
         document.getElementById('wizardForm').submit();
     }
 
