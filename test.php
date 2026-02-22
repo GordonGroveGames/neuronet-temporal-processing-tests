@@ -739,8 +739,8 @@ if (!$userInfo) {
                 restartTestBtn.style.display = show ? '' : 'none';
             }
 
-            // Restart the current assessment from the beginning without saving
-            function restartAssessment() {
+            // Restart only the current test without saving its partial results
+            function restartCurrentTest() {
                 // Stop any playing audio
                 if (currentAudio) {
                     currentAudio.pause();
@@ -749,19 +749,17 @@ if (!$userInfo) {
                 }
                 previewPlaying = false;
 
-                // Reset all test state — discard partial results
-                currentTestIndex = 0;
+                // Clear current test state — discard its partial results
                 currentTest = null;
-                testResultsData = [];
 
-                // Re-start from the first test
-                startTests();
+                // Re-start the same test at the current index
+                startNextTest();
             }
 
             // Wire up the restart button
             restartTestBtn.addEventListener('click', function() {
-                if (confirm('Restart? Your progress on the current test will not be saved.')) {
-                    restartAssessment();
+                if (confirm('Restart this test? Your progress will not be saved.')) {
+                    restartCurrentTest();
                 }
             });
 
