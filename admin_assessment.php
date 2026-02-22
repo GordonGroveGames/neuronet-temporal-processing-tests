@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     file_put_contents($assessmentsFile, json_encode($assessments, JSON_PRETTY_PRINT));
-    header('Location: admin_panel.php');
+    header('Location: admin_panel.php?saved=assessment');
     exit();
 }
 

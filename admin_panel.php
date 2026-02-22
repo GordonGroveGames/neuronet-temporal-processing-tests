@@ -177,6 +177,7 @@ require_once __DIR__ . '/migrate_tests.php';
                         <?= htmlspecialchars($createdBy) ?>
                     </span>
                     <div class="test-compact-actions">
+                        <a href="test.php?test_id=<?= urlencode($testId) ?>&practice=1" class="btn-ghost" style="font-size:0.8rem;color:var(--primary);"><i class="fa-solid fa-play me-1"></i>Practice</a>
                         <?php if ($canEdit): ?>
                             <a href="admin_test.php?id=<?= urlencode($testId) ?>" class="btn-ghost" style="font-size:0.8rem;"><i class="fa-solid fa-pen-to-square me-1"></i>Edit</a>
                         <?php else: ?>
@@ -236,6 +237,7 @@ require_once __DIR__ . '/migrate_tests.php';
                             </span>
                         </div>
                         <div class="d-flex align-items-center gap-2">
+                            <a href="test.php?assessments=<?= urlencode($id) ?>&practice=1" class="btn-ghost" style="color:var(--primary);"><i class="fa-solid fa-play me-1"></i>Practice</a>
                             <?php if ($canEdit): ?>
                                 <a href="admin_assessment.php?id=<?= urlencode($id) ?>" class="btn-ghost"><i class="fa-solid fa-pen-to-square me-1"></i>Edit</a>
                             <?php else: ?>
@@ -692,8 +694,61 @@ require_once __DIR__ . '/migrate_tests.php';
 </div>
 <?php endif; ?>
 
+<!-- Toast notification for save confirmations -->
+<div id="saveToast" class="save-toast" style="display:none;">
+    <i class="fa-solid fa-circle-check me-2"></i>
+    <span id="saveToastMsg">Saved!</span>
+</div>
+<style>
+.save-toast {
+    position: fixed;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--success, #28a745);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: var(--radius-pill, 9999px);
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    animation: toastSlideIn 0.3s ease;
+}
+@keyframes toastSlideIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes toastSlideOut {
+    from { opacity: 1; transform: translateX(-50%) translateY(0); }
+    to   { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+}
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Show toast notification if redirected after save
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const saved = urlParams.get('saved');
+        if (saved) {
+            const toast = document.getElementById('saveToast');
+            const msg = document.getElementById('saveToastMsg');
+            msg.textContent = saved === 'test' ? 'Test Saved' : saved === 'assessment' ? 'Assessment Saved' : 'Saved!';
+            toast.style.display = 'flex';
+            // Remove ?saved param from URL without reload
+            const cleanUrl = window.location.pathname + window.location.hash;
+            history.replaceState(null, '', cleanUrl);
+            // Auto-hide after 2 seconds
+            setTimeout(function() {
+                toast.style.animation = 'toastSlideOut 0.3s ease forwards';
+                setTimeout(function() { toast.style.display = 'none'; }, 300);
+            }, 2000);
+        }
+    });
+
     // Tab persistence functionality
     document.addEventListener('DOMContentLoaded', function() {
         // Get saved tab from localStorage or URL hash

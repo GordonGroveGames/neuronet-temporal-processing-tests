@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     file_put_contents($testsFile, json_encode($allTests, JSON_PRETTY_PRINT));
-    header('Location: admin_panel.php');
+    header('Location: admin_panel.php?saved=test');
     exit();
 }
 

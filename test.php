@@ -1,11 +1,22 @@
 <?php
-require_once __DIR__ . '/check_test_session.php';
-require_test_user_login();
+$practiceMode = isset($_GET['practice']) && $_GET['practice'] === '1';
 
-$userInfo = get_test_user_info();
-if (!$userInfo) {
-    header('Location: login.php');
-    exit();
+if ($practiceMode) {
+    // Practice mode: require admin login instead of test user login
+    require_once __DIR__ . '/admin_session.php';
+    require_admin_login();
+    $userInfo = [
+        'username' => $_SESSION['admin_user'] ?? 'Admin',
+        'email' => $_SESSION['admin_user'] ?? ''
+    ];
+} else {
+    require_once __DIR__ . '/check_test_session.php';
+    require_test_user_login();
+    $userInfo = get_test_user_info();
+    if (!$userInfo) {
+        header('Location: login.php');
+        exit();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -561,7 +572,11 @@ if (!$userInfo) {
             <button type="button" class="btn-logout" id="restartTestBtn" style="display:none;">
                 <i class="fa-solid fa-rotate-right me-1"></i> Restart Test
             </button>
-            <a href="index.php" class="btn-logout"><i class="fa-solid fa-right-from-bracket me-1"></i> Exit</a>
+            <?php if ($practiceMode): ?>
+                <a href="admin_panel.php" class="btn-logout"><i class="fa-solid fa-arrow-left me-1"></i> Return to Admin</a>
+            <?php else: ?>
+                <a href="index.php" class="btn-logout"><i class="fa-solid fa-right-from-bracket me-1"></i> Exit</a>
+            <?php endif; ?>
         </div>
     </nav>
 
@@ -612,6 +627,9 @@ if (!$userInfo) {
     </div>
     
     <script>
+        // Practice mode flag — results are NOT saved to DB
+        const practiceMode = <?= json_encode($practiceMode) ?>;
+
         // Set user session data from PHP session
         const userInfo = {
             fullName: <?= json_encode($userInfo['username']) ?>,
@@ -1464,7 +1482,10 @@ if (!$userInfo) {
                         <div id="saveStatus"></div>
                         <div class="summary-actions">
                             <button id="restartButton" class="btn"><i class="fa-solid fa-rotate-right me-1"></i> Restart</button>
-                            <button id="homeButton" class="btn-outline"><i class="fa-solid fa-house me-1"></i> Home</button>
+                            ${practiceMode
+                                ? '<button id="homeButton" class="btn-outline"><i class="fa-solid fa-arrow-left me-1"></i> Return to Admin</button>'
+                                : '<button id="homeButton" class="btn-outline"><i class="fa-solid fa-house me-1"></i> Home</button>'
+                            }
                         </div>
                     </div>
                 `;
@@ -1477,35 +1498,41 @@ if (!$userInfo) {
                 
                 // Add event listener for home button
                 document.getElementById('homeButton').addEventListener('click', function() {
-                    window.location.href = 'index.php';
+                    window.location.href = practiceMode ? 'admin_panel.php' : 'index.php';
                 });
                 
-                // Save results to the server
+                // Save results to the server (skip in practice mode)
                 const saveStatus = document.getElementById('saveStatus');
-                saveStatus.textContent = 'Saving results...';
 
-                try {
-                    const result = await saveResults();
-                    if (result && result.success) {
-                        saveStatus.textContent = 'Results saved successfully!';
-                        saveStatus.style.color = 'green';
+                if (practiceMode) {
+                    saveStatus.textContent = 'Practice mode — results not saved';
+                    saveStatus.style.color = 'var(--text-muted)';
+                } else {
+                    saveStatus.textContent = 'Saving results...';
 
-                        // Mark assessment(s) as completed for today
-                        const params = new URLSearchParams(window.location.search);
-                        const assessmentIds = (params.get('assessments') || '').split(',').filter(Boolean);
-                        const completed = JSON.parse(sessionStorage.getItem('completedAssessments') || '{}');
-                        const today = new Date().toISOString().slice(0, 10);
-                        assessmentIds.forEach(function(id) { completed[id] = today; });
-                        sessionStorage.setItem('completedAssessments', JSON.stringify(completed));
-                    } else {
+                    try {
+                        const result = await saveResults();
+                        if (result && result.success) {
+                            saveStatus.textContent = 'Results saved successfully!';
+                            saveStatus.style.color = 'green';
+
+                            // Mark assessment(s) as completed for today
+                            const params = new URLSearchParams(window.location.search);
+                            const assessmentIds = (params.get('assessments') || '').split(',').filter(Boolean);
+                            const completed = JSON.parse(sessionStorage.getItem('completedAssessments') || '{}');
+                            const today = new Date().toISOString().slice(0, 10);
+                            assessmentIds.forEach(function(id) { completed[id] = today; });
+                            sessionStorage.setItem('completedAssessments', JSON.stringify(completed));
+                        } else {
+                            saveStatus.textContent = 'Error saving results. Please try again.';
+                            saveStatus.style.color = 'red';
+                            console.error('Failed to save results:', result?.message);
+                        }
+                    } catch (error) {
                         saveStatus.textContent = 'Error saving results. Please try again.';
                         saveStatus.style.color = 'red';
-                        console.error('Failed to save results:', result?.message);
+                        console.error('Error saving results:', error);
                     }
-                } catch (error) {
-                    saveStatus.textContent = 'Error saving results. Please try again.';
-                    saveStatus.style.color = 'red';
-                    console.error('Error saving results:', error);
                 }
             }
             
