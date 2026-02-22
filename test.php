@@ -655,7 +655,40 @@ if (!$userInfo) {
             // Audio preloading and management
             let preloadedAudio = {};
             let currentAudio = null;
+
+            // Pre-calculated feedback image height (0 = not yet measured)
+            let feedbackImageHeight = 0;
             
+            // Preload feedback images and measure the target height for score bar cells
+            let feedbackProbe = null;
+            function preloadFeedbackImages() {
+                feedbackImageHeight = 0;
+                feedbackProbe = null;
+                if (!currentTest || !currentTest.feedback_images) return;
+
+                const imgUrl = currentTest.feedback_images.correct || currentTest.feedback_images.incorrect;
+                if (!imgUrl) return;
+
+                const probe = new Image();
+                probe.onload = function() {
+                    feedbackProbe = probe;
+                    measureFeedbackHeight();
+                };
+                probe.src = imgUrl;
+            }
+
+            // Measure feedback image height from probe — can be called when score bar becomes visible
+            function measureFeedbackHeight() {
+                if (!feedbackProbe || !feedbackProbe.naturalWidth) return;
+                // Use scoreContainer width (always visible) minus padding (15px * 2) as bar width
+                const barWidth = scoreBar.offsetWidth || (scoreContainer.offsetWidth - 30);
+                if (barWidth <= 0) return;
+                const cellWidth = Math.floor((barWidth - 14) / 15); // 14 gaps at 1px each
+                const ratio = feedbackProbe.naturalHeight / feedbackProbe.naturalWidth;
+                feedbackImageHeight = Math.min(80, Math.round(cellWidth * ratio));
+                feedbackImageHeight = Math.max(38, feedbackImageHeight);
+            }
+
             // Preload audio files for faster playback
             function preloadTestAudio() {
                 if (!currentTest || !currentTest.sounds) return;
@@ -865,9 +898,10 @@ if (!$userInfo) {
                 // Setup test display (images, etc.)
                 setupTestDisplay();
                 
-                // Preload audio for faster playback
+                // Preload audio and feedback images for faster playback
                 preloadTestAudio();
-                
+                preloadFeedbackImages();
+
                 // Show test screen with pre-start buttons
                 showScreen('test');
                 showPreStart();
@@ -888,6 +922,14 @@ if (!$userInfo) {
                 preStartArea.style.display = 'none';
                 scoreBar.style.display = '';
                 scoreContainer.classList.remove('pre-start-mode');
+                // Now that score bar is visible, measure feedback image height if probe is ready
+                if (feedbackProbe && feedbackImageHeight === 0) {
+                    measureFeedbackHeight();
+                }
+                // Re-render score bar at correct height now that it's visible
+                if (currentTest) {
+                    updateScoreBar([], currentTest.entries);
+                }
             }
 
             // Play each sound in sequence: Left, Center, Right with 500ms gaps
@@ -1176,100 +1218,65 @@ if (!$userInfo) {
             function updateScoreBar(responses, total) {
                 const scoreBar = document.getElementById('scoreBar');
                 scoreBar.innerHTML = ''; // Clear existing indicators
-                
+
                 // Check if feedback images are available
-                const hasFeedbackImages = currentTest && 
-                                        currentTest.feedback_images && 
+                const hasFeedbackImages = currentTest &&
+                                        currentTest.feedback_images &&
                                         (currentTest.feedback_images.correct || currentTest.feedback_images.incorrect);
-                
-                // Set initial height based on whether we have feedback images
-                if (!hasFeedbackImages) {
-                    // For square indicators, calculate width of one grid cell to make it square
-                    requestAnimationFrame(() => {
-                        const scoreBarWidth = scoreBar.offsetWidth;
-                        const indicatorWidth = Math.floor((scoreBarWidth - (15 * 1)) / 15); // 15 indicators with 1px gaps
-                        const squareHeight = Math.max(38, indicatorWidth); // Minimum 38px or square dimension
-                        
-                        scoreBar.style.height = (squareHeight + 2) + 'px'; // +2 for border
-                        
-                        // Apply height to all indicators
-                        const indicators = scoreBar.querySelectorAll('.score-indicator');
-                        indicators.forEach(indicator => {
-                            indicator.style.height = squareHeight + 'px';
-                            indicator.style.minHeight = squareHeight + 'px';
-                        });
-                    });
+
+                // Determine the fixed height for all indicators
+                let cellHeight;
+                if (hasFeedbackImages && feedbackImageHeight > 0) {
+                    // Use pre-measured feedback image height
+                    cellHeight = feedbackImageHeight;
+                } else if (!hasFeedbackImages) {
+                    // Square colored indicators: height = cell width
+                    const barWidth = scoreBar.offsetWidth || (scoreContainer.offsetWidth - 30);
+                    cellHeight = Math.max(38, Math.floor((barWidth - 14) / 15));
+                } else {
+                    // Feedback images exist but probe hasn't loaded yet — use fallback
+                    cellHeight = 60;
                 }
-                
+
+                // Set fixed height on the score bar so it never shifts
+                scoreBar.style.height = (cellHeight + 2) + 'px';
+
                 for (let i = 0; i < total; i++) {
                     const indicator = document.createElement('div');
                     indicator.className = 'score-indicator';
-                    
+                    indicator.style.height = cellHeight + 'px';
+                    indicator.style.minHeight = cellHeight + 'px';
+
                     if (i < responses.length) {
                         const isCorrect = responses[i];
-                        
+
                         if (hasFeedbackImages) {
                             // Use feedback images when available
                             const imageUrl = isCorrect ? currentTest.feedback_images.correct : currentTest.feedback_images.incorrect;
-                            
+
                             if (imageUrl) {
-                                // Create image element
                                 const img = document.createElement('img');
                                 img.src = imageUrl;
                                 img.alt = isCorrect ? 'Correct' : 'Incorrect';
                                 img.style.width = '100%';
-                                img.style.height = 'auto';
-                                img.style.maxHeight = '80px';
+                                img.style.height = '100%';
                                 img.style.objectFit = 'contain';
                                 img.style.borderRadius = '3px';
                                 img.draggable = false;
                                 img.style.webkitUserDrag = 'none';
                                 img.style.webkitTouchCallout = 'none';
                                 img.style.pointerEvents = 'none';
-                                
-                                // When image loads, adjust the score bar height
-                                img.onload = function() {
-                                    adjustScoreBarHeight();
-                                };
-                                
                                 indicator.appendChild(img);
                             } else {
-                                // Fallback to colored square if image URL is empty
                                 indicator.classList.add(isCorrect ? 'correct' : 'incorrect', 'square');
                             }
                         } else {
-                            // Use colored squares when no feedback images are defined
                             indicator.classList.add(isCorrect ? 'correct' : 'incorrect', 'square');
                         }
                     }
-                    
+
                     scoreBar.appendChild(indicator);
                 }
-            }
-            
-            // Adjust score bar height to accommodate images
-            function adjustScoreBarHeight() {
-                const scoreBar = document.getElementById('scoreBar');
-                const indicators = scoreBar.querySelectorAll('.score-indicator');
-                let maxHeight = 38; // Minimum height for colored squares
-                
-                // Find the tallest indicator with an image
-                indicators.forEach(indicator => {
-                    const img = indicator.querySelector('img');
-                    if (img && img.complete) {
-                        const indicatorHeight = img.offsetHeight;
-                        maxHeight = Math.max(maxHeight, indicatorHeight);
-                    }
-                });
-                
-                // Apply the max height to all indicators
-                indicators.forEach(indicator => {
-                    indicator.style.height = maxHeight + 'px';
-                    indicator.style.minHeight = maxHeight + 'px';
-                });
-                
-                // Update the score bar height
-                scoreBar.style.height = (maxHeight + 2) + 'px'; // +2 for border
             }
             
             // Calculate score for a test
