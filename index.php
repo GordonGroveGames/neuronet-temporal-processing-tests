@@ -213,40 +213,6 @@ if (empty($assessments) && count($allTests) === 1) {
         <div class="page-title">Welcome</div>
         <div class="page-subtitle">Tap a test or assessment to begin.</div>
 
-        <?php if (!empty($allTests)): ?>
-            <div class="section-label"><i class="fa-solid fa-vial me-1"></i> Tests</div>
-            <div class="item-grid">
-                <?php foreach ($allTests as $testId => $testData):
-                    $leftImg = $testData['left_image'] ?? '';
-                    $centerImg = $testData['center_image'] ?? '';
-                    $rightImg = $testData['right_image'] ?? '';
-                ?>
-                <a class="item-card" data-id="test_<?= htmlspecialchars($testId) ?>" data-type="test" href="test.php?test_id=<?= urlencode($testId) ?>">
-                    <div class="card-thumbnails">
-                        <?php if ($leftImg): ?>
-                            <img src="<?= htmlspecialchars($leftImg) ?>" alt="Left" draggable="false">
-                        <?php else: ?>
-                            <div class="thumb-placeholder">L</div>
-                        <?php endif; ?>
-                        <?php if ($centerImg): ?>
-                            <img src="<?= htmlspecialchars($centerImg) ?>" alt="Center" draggable="false">
-                        <?php else: ?>
-                            <div class="thumb-placeholder">C</div>
-                        <?php endif; ?>
-                        <?php if ($rightImg): ?>
-                            <img src="<?= htmlspecialchars($rightImg) ?>" alt="Right" draggable="false">
-                        <?php else: ?>
-                            <div class="thumb-placeholder">R</div>
-                        <?php endif; ?>
-                    </div>
-                    <div class="card-footer-row">
-                        <span class="card-item-name"><?= htmlspecialchars($testData['name'] ?? $testId) ?></span>
-                    </div>
-                </a>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-
         <?php if (!empty($assessments)): ?>
             <div class="section-label"><i class="fa-solid fa-clipboard-list me-1"></i> Assessments</div>
             <div class="item-grid">
@@ -292,6 +258,40 @@ if (empty($assessments) && count($allTests) === 1) {
                     <div class="card-footer-row">
                         <span class="card-item-name"><?= htmlspecialchars($assessment['name']) ?></span>
                         <span class="card-type-badge badge-assessment"><?= $testCount ?> test<?= $testCount !== 1 ? 's' : '' ?></span>
+                    </div>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($allTests)): ?>
+            <div class="section-label"><i class="fa-solid fa-vial me-1"></i> Tests</div>
+            <div class="item-grid">
+                <?php foreach ($allTests as $testId => $testData):
+                    $leftImg = $testData['left_image'] ?? '';
+                    $centerImg = $testData['center_image'] ?? '';
+                    $rightImg = $testData['right_image'] ?? '';
+                ?>
+                <a class="item-card" data-id="test_<?= htmlspecialchars($testId) ?>" data-type="test" href="test.php?test_id=<?= urlencode($testId) ?>">
+                    <div class="card-thumbnails">
+                        <?php if ($leftImg): ?>
+                            <img src="<?= htmlspecialchars($leftImg) ?>" alt="Left" draggable="false">
+                        <?php else: ?>
+                            <div class="thumb-placeholder">L</div>
+                        <?php endif; ?>
+                        <?php if ($centerImg): ?>
+                            <img src="<?= htmlspecialchars($centerImg) ?>" alt="Center" draggable="false">
+                        <?php else: ?>
+                            <div class="thumb-placeholder">C</div>
+                        <?php endif; ?>
+                        <?php if ($rightImg): ?>
+                            <img src="<?= htmlspecialchars($rightImg) ?>" alt="Right" draggable="false">
+                        <?php else: ?>
+                            <div class="thumb-placeholder">R</div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-footer-row">
+                        <span class="card-item-name"><?= htmlspecialchars($testData['name'] ?? $testId) ?></span>
                     </div>
                 </a>
                 <?php endforeach; ?>
