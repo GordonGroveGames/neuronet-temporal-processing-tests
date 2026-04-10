@@ -3,6 +3,7 @@
  * GitHub Webhook Auto-Deploy Script (Dev Branch)
  * Pulls latest changes from dev when GitHub sends a push notification.
  * Deploy target: dev.thefluencyfactor.com
+ * Webhook verified: 2026-04-10
  */
 
 // Secret token — must match the one configured in GitHub webhook settings
