@@ -535,6 +535,57 @@ if ($practiceMode) {
             }
         }
 
+        /* Title page (shown before each test/game) */
+        .title-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            padding: 2rem 1rem;
+        }
+        .title-page-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 2.5rem 0;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+        .btn-play {
+            font-size: 1.5rem;
+            font-weight: 600;
+            padding: 18px 56px;
+            background: var(--success, #28a745);
+            color: #fff;
+            border: 1px solid #218838;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            box-shadow: inset 0 1px rgba(255,255,255,0.15), 0 2px 6px rgba(40,167,69,0.25);
+        }
+        .btn-play:hover {
+            background: #218838;
+            transform: translateY(-1px);
+            box-shadow: inset 0 1px rgba(255,255,255,0.1), 0 6px 12px rgba(40,167,69,0.3);
+        }
+        .btn-play:active {
+            transform: translateY(0);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+        }
+        @media (max-width: 768px) {
+            .title-page-name {
+                font-size: 1.85rem;
+                margin-bottom: 2rem;
+            }
+            .btn-play {
+                font-size: 1.25rem;
+                padding: 16px 40px;
+                width: auto;
+            }
+        }
+
         /* Navbar overrides for test page */
         .navbar-admin {
             position: fixed;
@@ -581,6 +632,16 @@ if ($practiceMode) {
     </nav>
 
     <div class="test-container">
+        <!-- Title Screen (shown before each test/game) -->
+        <div id="titleScreen" class="screen">
+            <div class="title-page">
+                <h1 class="title-page-name" id="titlePageName">&nbsp;</h1>
+                <button type="button" class="btn-play" id="btnPlay">
+                    <i class="fa-solid fa-play me-2"></i> Play
+                </button>
+            </div>
+        </div>
+
         <!-- Test Screen -->
         <div id="testScreen" class="screen">
             <div class="test-header">
@@ -648,6 +709,9 @@ if ($practiceMode) {
         
         document.addEventListener('DOMContentLoaded', function() {
             // DOM Elements
+            const titleScreen = document.getElementById('titleScreen');
+            const titlePageName = document.getElementById('titlePageName');
+            const btnPlay = document.getElementById('btnPlay');
             const testScreen = document.getElementById('testScreen');
             const resultsScreen = document.getElementById('resultsScreen');
             const testSections = document.querySelectorAll('.test-section');
@@ -819,6 +883,13 @@ if ($practiceMode) {
                 testNavbar.style.display = '';
                 document.body.classList.add('has-navbar');
 
+                // Title-page Play button: leave the title page and show the test
+                // screen with the existing pre-start area (Start + Hear the Sounds).
+                btnPlay.addEventListener('click', function() {
+                    showScreen('test');
+                    showPreStart();
+                });
+
                 // Pre-start button handlers
                 btnStart.addEventListener('click', function() {
                     if (previewPlaying) return;
@@ -871,10 +942,14 @@ if ($practiceMode) {
             
             // Show a specific screen
             function showScreen(screen) {
+                titleScreen.style.display = 'none';
                 testScreen.style.display = 'none';
                 resultsScreen.style.display = 'none';
-                
+
                 switch(screen) {
+                    case 'title':
+                        titleScreen.style.display = 'block';
+                        break;
                     case 'test':
                         testScreen.style.display = 'block';
                         break;
@@ -909,20 +984,23 @@ if ($practiceMode) {
                 
                 // Update UI - format: Test 1 of 1: <test name>
                 progressText.textContent = `Test ${currentTestIndex + 1} of ${TESTS.length}: ${currentTest.name}`;
-                
+
                 // Clear previous score indicators
                 updateScoreBar([], currentTest.entries);
-                
+
                 // Setup test display (images, etc.)
                 setupTestDisplay();
-                
+
                 // Preload audio and feedback images for faster playback
                 preloadTestAudio();
                 preloadFeedbackImages();
 
-                // Show test screen with pre-start buttons
-                showScreen('test');
+                // Prepare the pre-start area so it's ready when Play is clicked
                 showPreStart();
+
+                // Show the title page first — Play button transitions to the test
+                titlePageName.textContent = currentTest.name || 'Game';
+                showScreen('title');
             }
             
             // Show pre-start buttons (Start + Hear the Sounds)
