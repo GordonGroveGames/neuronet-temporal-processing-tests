@@ -635,9 +635,9 @@ if ($practiceMode) {
         <!-- Title Screen (shown before each test/game) -->
         <div id="titleScreen" class="screen">
             <div class="title-page">
-                <h1 class="title-page-name" id="titlePageName">&nbsp;</h1>
+                <h1 class="title-page-name" id="titlePageName" style="display:none;">&nbsp;</h1>
                 <button type="button" class="btn-play" id="btnPlay">
-                    <i class="fa-solid fa-play me-2"></i> Play
+                    <i class="fa-solid fa-play me-2"></i> Play the Game
                 </button>
             </div>
         </div>
