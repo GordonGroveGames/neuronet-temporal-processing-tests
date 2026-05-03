@@ -665,11 +665,11 @@ if ($practiceMode) {
             
             <div class="score-container" id="scoreContainer">
                 <div class="pre-start-area" id="preStartArea">
-                    <button type="button" class="btn btn-start" id="btnStart">
-                        <i class="fa-solid fa-play me-2"></i> Start
-                    </button>
                     <button type="button" class="btn btn-hear-sounds" id="btnHearSounds">
                         <i class="fa-solid fa-volume-high me-2"></i> Hear the Sounds
+                    </button>
+                    <button type="button" class="btn btn-start" id="btnStart">
+                        <i class="fa-solid fa-play me-2"></i> Start
                     </button>
                 </div>
                 <div class="score-bar" id="scoreBar" style="display:none;">
