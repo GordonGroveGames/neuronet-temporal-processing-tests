@@ -1,7 +1,7 @@
 <?php
 /**
  * GitHub Webhook Auto-Deploy Script
- * Pulls latest changes from main when GitHub sends a push notification.
+ * Pulls latest changes from main or dev when GitHub sends a push notification.
  */
 
 // Secret token — must match the one configured in GitHub webhook settings
@@ -22,20 +22,24 @@ if (!hash_equals($expected, $signature)) {
     exit('Invalid signature');
 }
 
-// Only deploy on pushes to main
 $data = json_decode($payload, true);
-if (($data['ref'] ?? '') !== 'refs/heads/main') {
-    exit('Not main branch, skipping.');
+$ref = $data['ref'] ?? '';
+$allowedBranches = ['refs/heads/main', 'refs/heads/dev'];
+
+if (!in_array($ref, $allowedBranches, true)) {
+    exit('Branch not configured for deploy, skipping.');
 }
+
+$branch = substr($ref, strlen('refs/heads/'));
 
 // Pull latest changes
 $repoDir = __DIR__;
 $output = [];
 $returnCode = 0;
-exec("cd " . escapeshellarg($repoDir) . " && /usr/local/cpanel/3rdparty/bin/git pull origin main 2>&1", $output, $returnCode);
+exec("cd " . escapeshellarg($repoDir) . " && /usr/local/cpanel/3rdparty/bin/git pull origin " . escapeshellarg($branch) . " 2>&1", $output, $returnCode);
 
 // Log the result
-$logEntry = date('Y-m-d H:i:s') . " | Return code: $returnCode\n" . implode("\n", $output) . "\n---\n";
+$logEntry = date('Y-m-d H:i:s') . " | Branch: $branch | Return code: $returnCode\n" . implode("\n", $output) . "\n---\n";
 file_put_contents(__DIR__ . '/deploy.log', $logEntry, FILE_APPEND | LOCK_EX);
 
 if ($returnCode === 0) {
