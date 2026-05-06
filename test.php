@@ -637,7 +637,7 @@ if ($practiceMode) {
             <div class="title-page">
                 <h1 class="title-page-name" id="titlePageName">Go</h1>
                 <button type="button" class="btn-play" id="btnPlay">
-                    <i class="fa-solid fa-play me-2"></i> Play the Game
+                    <i class="fa-solid fa-play me-2"></i> Go
                 </button>
             </div>
         </div>
