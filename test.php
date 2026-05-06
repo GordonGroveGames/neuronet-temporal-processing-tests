@@ -635,8 +635,7 @@ if ($practiceMode) {
         <!-- Title Screen (shown before each test/game) -->
         <div id="titleScreen" class="screen">
             <div class="title-page">
-                <h1 class="title-page-name" id="titlePageName">Go</h1>
-                <button type="button" class="btn-play" id="btnPlay">
+<button type="button" class="btn-play" id="btnPlay">
                     <i class="fa-solid fa-play me-2"></i> Go
                 </button>
             </div>
@@ -710,7 +709,6 @@ if ($practiceMode) {
         document.addEventListener('DOMContentLoaded', function() {
             // DOM Elements
             const titleScreen = document.getElementById('titleScreen');
-            const titlePageName = document.getElementById('titlePageName');
             const btnPlay = document.getElementById('btnPlay');
             const testScreen = document.getElementById('testScreen');
             const resultsScreen = document.getElementById('resultsScreen');
@@ -999,7 +997,6 @@ if ($practiceMode) {
                 showPreStart();
 
                 // Show the title page first — Play button transitions to the test
-                titlePageName.textContent = 'Go';
                 showScreen('title');
             }
             
