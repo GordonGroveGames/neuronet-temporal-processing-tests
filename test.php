@@ -632,6 +632,16 @@ if ($practiceMode) {
     </nav>
 
     <div class="test-container">
+        <!-- Cover Screen (shown once at the very start) -->
+        <div id="coverScreen" class="screen">
+            <div class="title-page">
+                <h1 class="title-page-name">NeuroNet Learning<br>6 Games</h1>
+                <button type="button" class="btn-play" id="btnCover">
+                    <i class="fa-solid fa-play me-2"></i> Go
+                </button>
+            </div>
+        </div>
+
         <!-- Title Screen (shown before each test/game) -->
         <div id="titleScreen" class="screen">
             <div class="title-page">
@@ -708,6 +718,8 @@ if ($practiceMode) {
         
         document.addEventListener('DOMContentLoaded', function() {
             // DOM Elements
+            const coverScreen = document.getElementById('coverScreen');
+            const btnCover = document.getElementById('btnCover');
             const titleScreen = document.getElementById('titleScreen');
             const btnPlay = document.getElementById('btnPlay');
             const testScreen = document.getElementById('testScreen');
@@ -933,18 +945,25 @@ if ($practiceMode) {
                     }
                 });
                 
-                // Load assessments then start tests
+                // Load assessments then show cover screen
                 await loadAssessments();
-                startTests();
+                btnCover.addEventListener('click', function() {
+                    startTests();
+                });
+                showScreen('cover');
             }
             
             // Show a specific screen
             function showScreen(screen) {
+                coverScreen.style.display = 'none';
                 titleScreen.style.display = 'none';
                 testScreen.style.display = 'none';
                 resultsScreen.style.display = 'none';
 
                 switch(screen) {
+                    case 'cover':
+                        coverScreen.style.display = 'block';
+                        break;
                     case 'title':
                         titleScreen.style.display = 'block';
                         break;
