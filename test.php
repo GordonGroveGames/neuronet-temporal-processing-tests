@@ -645,7 +645,8 @@ if ($practiceMode) {
         <!-- Title Screen (shown before each test/game) -->
         <div id="titleScreen" class="screen">
             <div class="title-page">
-<button type="button" class="btn-play" id="btnPlay">
+                <h1 class="title-page-name" id="titlePageName"></h1>
+                <button type="button" class="btn-play" id="btnPlay">
                     <i class="fa-solid fa-play me-2"></i> Go
                 </button>
             </div>
@@ -1016,6 +1017,7 @@ if ($practiceMode) {
                 showPreStart();
 
                 // Show the title page first — Play button transitions to the test
+                document.getElementById('titlePageName').textContent = `Game ${currentTestIndex + 1}`;
                 showScreen('title');
             }
             
