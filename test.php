@@ -288,7 +288,7 @@ if ($practiceMode) {
         /* Results Screen */
         .results-header {
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.85rem;
         }
         .results-header h2 {
             font-size: 1.1rem;
@@ -305,7 +305,7 @@ if ($practiceMode) {
             background: var(--surface-0);
             border-radius: var(--radius-lg);
             padding: 0;
-            margin: 0 0 1rem 0;
+            margin: 0 0 0.5rem 0;
             box-shadow: var(--shadow-sm);
             text-align: left;
             overflow: hidden;
@@ -318,7 +318,7 @@ if ($practiceMode) {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.875rem 1.25rem;
+            padding: 0.5rem 1.25rem;
             border-bottom: 1px solid var(--border-light);
         }
         .test-result-header h4 {
@@ -328,17 +328,17 @@ if ($practiceMode) {
             font-weight: 600;
         }
         .test-result-body {
-            padding: 1rem 1.25rem;
+            padding: 0.6rem 1.25rem;
         }
         .result-stats {
             display: flex;
             gap: 1.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
         .result-stat {
             display: flex;
             flex-direction: column;
-            gap: 0.15rem;
+            gap: 0.05rem;
         }
         .result-stat-label {
             font-size: 0.58rem;
@@ -380,8 +380,8 @@ if ($practiceMode) {
         .summary {
             background: var(--surface-0);
             border-radius: var(--radius-lg);
-            padding: 1.5rem;
-            margin: 1.5rem 0 0 0;
+            padding: 1rem;
+            margin: 0.85rem 0 0 0;
             box-shadow: var(--shadow-sm);
             border-top: 3px solid var(--primary);
         }
@@ -389,13 +389,13 @@ if ($practiceMode) {
             font-size: 0.9rem;
             font-weight: 700;
             color: var(--text-primary);
-            margin: 0 0 1rem 0;
+            margin: 0 0 0.6rem 0;
         }
         .summary-stats {
             display: flex;
             justify-content: center;
             gap: 2.5rem;
-            margin-bottom: 1.25rem;
+            margin-bottom: 0.75rem;
         }
         .summary-stat {
             text-align: center;
@@ -417,7 +417,7 @@ if ($practiceMode) {
             display: flex;
             justify-content: center;
             gap: 0.75rem;
-            margin-top: 1.25rem;
+            margin-top: 0.75rem;
         }
         .summary-actions .btn-outline {
             background: transparent;
