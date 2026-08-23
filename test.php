@@ -300,6 +300,11 @@ if ($practiceMode) {
             color: var(--text-secondary);
             font-size: 0.74rem;
         }
+        .results-header .results-timestamp {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
 
         .test-result {
             background: var(--surface-0);
@@ -1521,8 +1526,12 @@ if ($practiceMode) {
                 const scoreColorClass = overallPercentage >= 80 ? 'score-high' : overallPercentage >= 50 ? 'score-medium' : 'score-low';
 
                 // Generate results HTML
+                const completedAt = new Date().toLocaleString('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                });
                 let resultsHTML = `<div class="results-header">
-                    <h2><i class="fa-solid fa-chart-column me-2"></i>Test Results</h2>
+                    <h2><i class="fa-solid fa-chart-column me-2"></i>Test Results <span class="results-timestamp">${completedAt}</span></h2>
                     <div class="results-subtitle">${testResultsData.length} assessment${testResultsData.length !== 1 ? 's' : ''} completed</div>
                 </div>`;
 
