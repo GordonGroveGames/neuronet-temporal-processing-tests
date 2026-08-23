@@ -291,14 +291,14 @@ if ($practiceMode) {
             margin-bottom: 1.5rem;
         }
         .results-header h2 {
-            font-size: 1.35rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--text-primary);
             margin: 0 0 0.25rem 0;
         }
         .results-header .results-subtitle {
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-size: 0.74rem;
         }
 
         .test-result {
@@ -324,7 +324,7 @@ if ($practiceMode) {
         .test-result-header h4 {
             color: var(--text-primary);
             margin: 0;
-            font-size: 1rem;
+            font-size: 0.82rem;
             font-weight: 600;
         }
         .test-result-body {
@@ -341,14 +341,14 @@ if ($practiceMode) {
             gap: 0.15rem;
         }
         .result-stat-label {
-            font-size: 0.7rem;
+            font-size: 0.58rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
             font-weight: 600;
             color: var(--text-muted);
         }
         .result-stat-value {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             font-weight: 700;
             color: var(--text-primary);
         }
@@ -358,14 +358,14 @@ if ($practiceMode) {
             flex-wrap: wrap;
         }
         .result-score-dot {
-            width: 28px;
-            height: 28px;
+            width: 23px;
+            height: 23px;
             border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
             color: #fff;
-            font-size: 0.75rem;
+            font-size: 0.62rem;
             font-weight: 700;
             flex-shrink: 0;
             transition: transform var(--transition);
@@ -386,7 +386,7 @@ if ($practiceMode) {
             border-top: 3px solid var(--primary);
         }
         .summary h3 {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             font-weight: 700;
             color: var(--text-primary);
             margin: 0 0 1rem 0;
@@ -401,12 +401,12 @@ if ($practiceMode) {
             text-align: center;
         }
         .summary-stat-value {
-            font-size: 1.75rem;
+            font-size: 1.44rem;
             font-weight: 700;
             line-height: 1.2;
         }
         .summary-stat-label {
-            font-size: 0.72rem;
+            font-size: 0.6rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
             font-weight: 600;
