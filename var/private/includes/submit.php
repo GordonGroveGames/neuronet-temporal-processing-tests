@@ -194,7 +194,7 @@ try {
     }
     
     // Define database path and ensure directory exists
-    $dbDir = __DIR__ . '/../data';
+    $dbDir = __DIR__ . '/../../data';
     $dbPath = $dbDir . '/test_results.db';
     
     // Debug output
