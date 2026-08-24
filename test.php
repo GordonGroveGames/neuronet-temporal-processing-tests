@@ -640,7 +640,7 @@ if ($practiceMode) {
         <!-- Cover Screen (shown once at the very start) -->
         <div id="coverScreen" class="screen">
             <div class="title-page">
-                <h1 class="title-page-name">NeuroNet Learning<br>6 Games</h1>
+                <h1 class="title-page-name">NeuroNet Learning<br><span id="coverAssessmentName">6 Games</span></h1>
                 <button type="button" class="btn-play" id="btnCover">
                     <i class="fa-solid fa-play me-2"></i> Go
                 </button>
@@ -839,6 +839,14 @@ if ($practiceMode) {
                     data.assessments.forEach(assessment => {
                         TESTS.push(...assessment.tests);
                     });
+
+                    // Show the current assessment's own name on the cover page
+                    if (data.assessments.length === 1) {
+                        const coverAssessmentName = document.getElementById('coverAssessmentName');
+                        if (coverAssessmentName) {
+                            coverAssessmentName.textContent = data.assessments[0].name;
+                        }
+                    }
                     
                     if (TESTS.length === 0) {
                         throw new Error('No tests found in assessments');
